@@ -31,7 +31,7 @@ private:
     ULLONG _tab_rows;                // [_tab_rows] domain of HFs
     ULLONG* _h_coeffs;        // [(2*m)*(l+1)] -> [2^(k+log(_tab_rows)+c)]=[_h_mod_mask + 1]
     // tables T^0_0, T^1_0, T^2_0, T^0_1, T^1_1, T^2_2
-    // ordering: tables = columns, row-wise represenation
+    // ordering: tables = columns, row-wise representation
     //_tab_rows = number of rows of each table
     short _tab_width;       // = b = number of bits of each table entry (b = log(max ni) + c)
     ULLONG* _random_table;    // [6*_tab_rows] -> [2^(_tab_width)]
@@ -39,13 +39,23 @@ private:
     // selection arrays G_i where G_i: [m_i] -> [3], i in [m]
     // ordering: G_0[0], G_0[1], G_0[2], ..., G_0[m_0-1], G_1[0], G_1[1], ..., G_(m-1)[m_(m-1)-1]
     // G_i[j] = _g[offset[i]+j]
-    unsigned char _g;       // [offset[m]] -> [3]; 8 bit <-> 4 values
+    unsigned char* _g;       // [offset[m]] -> [3]; 8 bit <-> 4 values
+
+    void configure(Configuration, ULLONG); //step 1 + bit masks
+    void createUhf(ULLONG, ULLONG*); //step 2
+    bool split(ULLONG, ULLONG*, ULLONG**, ULLONG*, ULLONG*, ULLONG*); //steps 4-7
+    void createGoodPairs(ULLONG**, ULLONG*); //step 8
+    void createRandomTables(ULLONG); //step 9
+    void createRandomFactor(ULLONG); //step 10.1
+    void computeFij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2
+    void computeGij(ULLONG*); //step 11-12
+    bool isCyclic(ULLONG, ULLONG*); //step 13+_g
 
 public:
     virtual ~PerfectHashFunction() { }
 
 public:
-    PerfectHashFunction(Configuration config, ULLONG data_length, ULLONG *data) { }
+    PerfectHashFunction(Configuration config, ULLONG data_length, ULLONG *data);
     // TODO int instead of ULLONG? only one bit/one number needed to express "not found": ULLONG_MAX?
     ULLONG evaluate(ULLONG x);
 };
