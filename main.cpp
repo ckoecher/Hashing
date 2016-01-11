@@ -1,6 +1,4 @@
-#include <iostream>
-
-using namespace std;
+#include "definitions.h"
 
 int main() {
     cout << "Hello, World!" << endl;

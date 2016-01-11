@@ -1,7 +1,3 @@
-//
-// Created by philipp on 11.01.16.
-//
-
 #ifndef HASHING_DEFINITIONS_H
 #define HASHING_DEFINITIONS_H
 
