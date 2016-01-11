@@ -13,6 +13,8 @@ using namespace std;
 //typedef uint_fast64_t UINT;
 typedef unsigned long long int ULLONG;
 
+#define ARR(array, rows, cols, row, col) array[row*cols+col]
+
 struct Configuration {
     short k; // U = [(2^k)^l], k*l(<)=64
     short l;
