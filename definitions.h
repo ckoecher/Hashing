@@ -27,6 +27,7 @@ struct Configuration {
     short additional_bits_tab; // for table entries
     short num_of_tries_random_tab;
     short num_of_tries_random_si;
+    bool multiple_seeds; // use just one or more seeds for randomization of Mersenne Twister
 };
 
 #endif //HASHING_DEFINITIONS_H

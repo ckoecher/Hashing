@@ -41,15 +41,15 @@ private:
     // G_i[j] = _g[offset[i]+j]
     unsigned char* _g;       // [offset[m]] -> [3]; 8 bit <-> 4 values
 
-    void configure(Configuration, ULLONG); //step 1 + bit masks
-    void createUhf(ULLONG, ULLONG*); //step 2
-    bool split(ULLONG, ULLONG*, ULLONG**, ULLONG*, ULLONG*, ULLONG*); //steps 4-7
-    void createGoodPairs(ULLONG**, ULLONG*); //step 8
-    void createRandomTables(ULLONG); //step 9
-    void createRandomFactor(ULLONG); //step 10.1
-    void computeFij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2
-    void computeGij(ULLONG*); //step 11-12
-    bool isCyclic(ULLONG, ULLONG*); //step 13+_g
+    void _configure(Configuration, ULLONG); //step 1 + bit masks
+    void _createUhf(ULLONG, ULLONG*); //step 2
+    bool _split(ULLONG, ULLONG*, ULLONG**, ULLONG*, ULLONG*, ULLONG*); //steps 4-7
+    void _createGoodPairs(ULLONG**, ULLONG*); //step 8
+    void _createRandomTables(ULLONG); //step 9
+    void _createRandomFactor(ULLONG); //step 10.1
+    void _computeFij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2
+    void _computeGij(ULLONG*); //step 11-12
+    bool _isCyclic(ULLONG, ULLONG*); //step 13+_g
 
 public:
     virtual ~PerfectHashFunction() { }
