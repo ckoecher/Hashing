@@ -15,32 +15,28 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
     // RNG begin
     mt19937* rng;
     uniform_int_distribution<ULLONG>* dist_h_split_coeffs, dist_h_coeffs, dist_tables;
-    ULLONG maxRandomNumber;
     // RNG end
 
     _configure(config, data_length);
 
     // RNG begin
     rng = new mt19937(config.seed);
-    maxRandomNumber = (ULLONG)pow(2.0, _k + ceil(log2(_m)) + additional_bits_uhf)-1;
-    dist_h_split_coeffs = new uniform_int_distribution<ULLONG>(0,maxRandomNumber);
+    dist_h_split_coeffs = new uniform_int_distribution<ULLONG>(0, _h_split_mod_mask);
     // RNG end
 
     do {
         _createUhf(_h_split_mod_mask, _h_split_coeffs, rng, dist_h_split_coeffs); //step 3
-    } while(!_split(data_length, data, bucket_data, bucket_sizes, &max_bucket_size, &max_mi));
+    } while(!_split(config, data_length, data, bucket_data, bucket_sizes, &max_bucket_size, &max_mi));
     //TODO assert(ceil(log(max_mi)) <= 64)
 
     // RNG begin
-    maxRandomNumber = (ULLONG)pow(2.0, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
-    dist_h_coeffs = new uniform_int_distribution<ULLONG>(0,maxRandomNumber);
+    dist_h_coeffs = new uniform_int_distribution<ULLONG>(0, _h_mod_mask);
     // RNG end
 
     _createGoodPairs(bucket_data, bucket_sizes, rng, dist_h_coeffs);
 
     // RNG begin
-    maxRandomNumber = (ULLONG)pow(2.0, ceil(log2(max_bucket_size)) + config.additional_bits_tab)-1;
-    dist_tables = new uniform_int_distribution<ULLONG>(0,maxRandomNumber);
+    dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG)pow(2.0, _tab_width)-1);
     // RNG end
 
     acyclicity_test_array = new ULLONG[max_mi * 3];
@@ -72,14 +68,20 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
 }
 
 void PerfectHashFunction::_configure(Configuration config, ULLONG data_length) {
-    //TODO implement this method!
+    //TODO check this method!
+    _k = config.k;
+    _l = config.l;
+    _m = (ULLONG)ceil(config.m_coeff * pow(data_length, config.m_exp));
+    _h_split_mod_mask = (ULLONG)pow(2.0, _k + ceil(log2(_m)) + config.additional_bits_uhf)-1;
+    _tab_rows = (ULLONG)ceil(config.tab_rows_coeff * pow(data_length, config.tab_rows_exp));
+    _h_mod_mask = (ULLONG)pow(2.0, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
 }
 
 void PerfectHashFunction::_createUhf(ULLONG max_value, ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
     //TODO implement this method!
 }
 
-bool PerfectHashFunction::_split(ULLONG data_length, ULLONG *data, ULLONG **bucket_data, ULLONG *bucket_sizes,
+bool PerfectHashFunction::_split(Configuration config, data_length, ULLONG *data, ULLONG **bucket_data, ULLONG *bucket_sizes,
                                  ULLONG *max_bucket_size, ULLONG *max_mi) {
     //TODO implement this method!
     return true;
