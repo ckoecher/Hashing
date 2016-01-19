@@ -79,15 +79,41 @@ void PerfectHashFunction::_configure(Configuration config, ULLONG data_length) {
 }
 
 void PerfectHashFunction::_createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
-    //TODO implement this method!
+    //TODO check this method!
     for(int i = 0; i < _l+1; i++) {
         coeffs[i] = (*dist)(*rng);
     }
 }
 
+ULLONG _evalUhf(ULLONG* coeff, ULLONG key) {
+    ULLONG res = coeff[_l] & _h_split_mod_mask;
+    // TODO
+}
+
 bool PerfectHashFunction::_split(Configuration config, data_length, ULLONG *data, ULLONG **bucket_data, ULLONG *bucket_sizes,
                                  ULLONG *max_bucket_size, ULLONG *max_mi) {
-    //TODO implement this method!
+    //TODO check this method!
+//    ULLONG **bucket_data; //= new ULLONG*[_m] // == B in concept
+//    ULLONG *bucket_sizes; //= Array of ni's // <= diffs of C in concept
+//    ULLONG max_bucket_size, max_mi;
+
+    // initialization and instantiation
+    ULLONG* splitted_data = new ULLONG[data_length]; // == B
+    ULLONG* counter = new ULLONG[_m+1](); // initialized to zero because of (); == C[i]
+    bucket_sizes = new ULLONG[_m]; // == n_i
+    bucket_data = new ULLONG*[_m]; // bucket_data[i] == S[i] TODO or _m+1? (should not be needed...)
+    ULLONG hv; // hash value by h_split
+    ULLONG bucketOverflowSize = (ULLONG)floor(sqrt(data_length));
+
+    // counting
+    for(int i = 0; i < data_length; i++) {
+        // TODO
+    }
+    // TODO
+
+
+    // TODO step 5-7 + _tab_width
+
     return true;
 }
 
