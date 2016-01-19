@@ -24,8 +24,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
     dist_h_split_coeffs = new uniform_int_distribution<ULLONG>(0, _h_split_mod_mask);
     // RNG end
 
+    _h_split_coeffs = new ULLONG[_l+1];
     do {
-        _createUhf(_h_split_mod_mask, _h_split_coeffs, rng, dist_h_split_coeffs); //step 3
+        _createUhf(_h_split_coeffs, rng, dist_h_split_coeffs); //step 3
     } while(!_split(config, data_length, data, bucket_data, bucket_sizes, &max_bucket_size, &max_mi));
     //TODO assert(ceil(log(max_mi)) <= 64)
 
@@ -77,8 +78,11 @@ void PerfectHashFunction::_configure(Configuration config, ULLONG data_length) {
     _h_mod_mask = (ULLONG)pow(2.0, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
 }
 
-void PerfectHashFunction::_createUhf(ULLONG max_value, ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
+void PerfectHashFunction::_createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
     //TODO implement this method!
+    for(int i = 0; i < _l+1; i++) {
+        coeffs[i] = (*dist)(*rng);
+    }
 }
 
 bool PerfectHashFunction::_split(Configuration config, data_length, ULLONG *data, ULLONG **bucket_data, ULLONG *bucket_sizes,
