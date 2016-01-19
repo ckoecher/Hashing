@@ -27,7 +27,13 @@ struct Configuration {
     short additional_bits_tab; // for table entries
     short num_of_tries_random_tab;
     short num_of_tries_random_si;
-    bool multiple_seeds; // use just one or more seeds for randomization of Mersenne Twister
+    //bool multiple_seeds; // use just one or more seeds for randomization of Mersenne Twister
+    mt19937::result_type seed; // mt19937::result_type = unsigned long (= uint_fast32_t?)
 };
+
+//std::mt19937 generator (123);
+//std::uniform_real_distribution<double> dis(0.0, 1.0);
+//
+//double randomRealBetweenZeroAndOne = dis(generator);
 
 #endif //HASHING_DEFINITIONS_H

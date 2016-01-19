@@ -42,11 +42,11 @@ private:
     unsigned char* _g;       // [offset[m]] -> [3]; 8 bit <-> 4 values
 
     void _configure(Configuration, ULLONG); //step 1 + bit masks
-    void _createUhf(ULLONG, ULLONG*); //step 2
+    void _createUhf(ULLONG, ULLONG*, mt19937*, uniform_int_distribution<ULLONG>*); //step 2
     bool _split(ULLONG, ULLONG*, ULLONG**, ULLONG*, ULLONG*, ULLONG*); //steps 4-7
-    void _createGoodPairs(ULLONG**, ULLONG*); //step 8
-    void _createRandomTables(ULLONG); //step 9
-    void _createRandomFactor(ULLONG); //step 10.1
+    void _createGoodPairs(ULLONG**, ULLONG*, mt19937*, uniform_int_distribution<ULLONG>*); //step 8
+    void _createRandomTables(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 9
+    void _createRandomFactor(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 10.1
     void _computeFij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2
     void _computeGij(ULLONG*); //step 11-12
     bool _isCyclic(ULLONG, ULLONG*); //step 13+_g
