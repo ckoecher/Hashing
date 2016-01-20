@@ -6,7 +6,7 @@
 
 PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_length, ULLONG *data) {
     ULLONG* splitted_data; // => B in (2)
-    ULLONG **bucket_data; //= new ULLONG*[_m] => S[i] in (7)
+    ULLONG **bucket_data; //= new ULLONG*[_m] => S[i] in (7) // TODO only needs normal delete[] because of splitted_data (!?)
     ULLONG *bucket_sizes; //= Array of ni's
     ULLONG max_bucket_size, max_mi;
     ULLONG *acyclicity_test_array;
@@ -174,6 +174,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
 void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
     //TODO implement this method!
+
 }
 
 void PerfectHashFunction::_createRandomTables(ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {

@@ -15,6 +15,7 @@ using namespace std;
 typedef unsigned long long int ULLONG;
 
 #define ARR(array, rows, cols, row, col) array[row*cols+col]
+#define CHARBITPAIR(array, index) (array[(ULLONG)index/4] >> 2*(3 - (index % 4))) % 4
 
 struct Configuration {
     short k; // U = [(2^k)^l], k*l(<)=64, k>=1, l>=1
