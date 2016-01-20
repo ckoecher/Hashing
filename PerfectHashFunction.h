@@ -43,7 +43,7 @@ private:
 
     void _configure(Configuration, ULLONG); //step 1 + bit masks
     void _createUhf(ULLONG*, mt19937*, uniform_int_distribution<ULLONG>*); //step 2
-    ULLONG _evalUhf(ULLONG*, ULLONG);
+    ULLONG _evalUhf(ULLONG, ULLONG*, ULLONG);
     bool _split(Configuration, ULLONG*, ULLONG**, ULLONG*, ULLONG*, ULLONG*); //steps 4-7 + _tab_width
     void _createGoodPairs(ULLONG**, ULLONG*, mt19937*, uniform_int_distribution<ULLONG>*); //step 8
     void _createRandomTables(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 9

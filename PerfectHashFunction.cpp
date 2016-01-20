@@ -85,9 +85,22 @@ void PerfectHashFunction::_createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_d
     }
 }
 
-ULLONG _evalUhf(ULLONG* coeff, ULLONG key) {
+ULLONG _evalUhf(ULLONG key, ULLONG* coeff, ULLONG modulus) {
+    // TODO check this method!
+    // & _h_split_mod_mask == Mod (_h_split_mod_mask+1) = Mod 2^l
+    // _h_split_mod_mask < 2^64
+    // => x*y Mod 2^l == (x*y Mod 2^64) Mod 2^l
+    // x*y Mod 2^64 == unsigned long long multiplication ("without" overflow)
+    ULLONG mask = (ULLONG)pow(2.0, _k)-1;
     ULLONG res = coeff[_l] & _h_split_mod_mask;
-    // TODO
+    for(int i = _l-1; i >= 0; i--) {
+        res += (coeff[i] * (key & mask)) & _h_split_mod_mask;
+        res &= _h_split_mod_mask;
+        key >>= _k;
+    }
+    res >>= _k;
+    res %= modulus;
+    return res;
 }
 
 bool PerfectHashFunction::_split(Configuration config, data_length, ULLONG *data, ULLONG **bucket_data, ULLONG *bucket_sizes,

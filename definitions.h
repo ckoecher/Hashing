@@ -7,7 +7,8 @@
 #include <climits>      // ULLONG_MAX
 #include <string>       // string, stoull (to unsigned long long), stod (to double)
 #include <random>       // Mersenne twister mt19937
-#include <functional>   // bind
+//#include <functional>   // bind
+#include <assert.h>
 using namespace std;
 
 //typedef uint_fast64_t UINT;
@@ -16,7 +17,7 @@ typedef unsigned long long int ULLONG;
 #define ARR(array, rows, cols, row, col) array[row*cols+col]
 
 struct Configuration {
-    short k; // U = [(2^k)^l], k*l(<)=64
+    short k; // U = [(2^k)^l], k*l(<)=64, k>=1, l>=1
     short l;
     double m_coeff; // m = ceil(m_coeff * n^(m_exp))
     double m_exp;
