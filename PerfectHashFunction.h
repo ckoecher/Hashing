@@ -17,7 +17,7 @@ private:
     short _l;   // needed for navigation in _h_split_coeffs
     // general information
     ULLONG _m;   // number of buckets, needed for navigation in mi, _h_mod_mask, ...
-    ULLONG* _offset; // [m] -> [m_0+m_1+m_2+...+m_(m-1)+1], offset of bucket i, offset[m] first position after buckets
+    ULLONG* _offset; // [m+1] -> [m_0+m_1+m_2+...+m_(m-1)+1], offset of bucket i, offset[m] first position after buckets
     // TODO offset[0] = 0 trivial, not necessary -> save as _offset_ and define function/... _offset? BUT computational overhead to test == 0
     //ULLONG* _mi;  // [0] .. [m-1], sizes of buckets, needed for computation of f^i_j, can be computed on demand: mi = offset[i+1]-offset[i]
     // h_split
@@ -44,7 +44,7 @@ private:
     void _configure(Configuration, ULLONG); //step 1 + bit masks
     void _createUhf(ULLONG*, mt19937*, uniform_int_distribution<ULLONG>*); //step 2
     ULLONG _evalUhf(ULLONG, ULLONG*, ULLONG);
-    bool _split(Configuration, ULLONG*, ULLONG**, ULLONG*, ULLONG*, ULLONG*); //steps 4-7 + _tab_width
+    bool _split(Configuration, ULLONG, ULLONG*, ULLONG*, ULLONG**, ULLONG*, ULLONG*, ULLONG*); //steps 4-7 + _tab_width
     void _createGoodPairs(ULLONG**, ULLONG*, mt19937*, uniform_int_distribution<ULLONG>*); //step 8
     void _createRandomTables(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 9
     void _createRandomFactor(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 10.1
