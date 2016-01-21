@@ -46,7 +46,7 @@ private:
     ULLONG _evalUhf(ULLONG, ULLONG*, ULLONG);
     bool _split(Configuration, ULLONG, ULLONG*, ULLONG*, ULLONG**, ULLONG*, ULLONG*, ULLONG*); //steps 4-7 + _tab_width
     void _createGoodPairs(ULLONG**, ULLONG*, ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 8
-    void _createRandomTables(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 9
+    void _createRandomTables(mt19937*, uniform_int_distribution<ULLONG>*); //step 9
     void _createRandomFactor(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 10.1
     void _computeFij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2
     void _computeGij(ULLONG*); //step 11-12

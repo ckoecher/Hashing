@@ -42,8 +42,11 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
     // RNG end
 
     acyclicity_test_array = new ULLONG[max_mi * 3]();
+
+    _random_table = new ULLONG[6*_tab_rows];
+    _random_factor = new ULLONG[_m]; // TODO 3*_m for factors s_(i,j)
     do {
-        _createRandomTables(max_bucket_size, rng, dist_tables);
+        _createRandomTables(rng, dist_tables);
         badTables = false;
         num_of_tries_tab++;
 
@@ -66,7 +69,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
 
     if(badTables) {
         //TODO throw an exception!!!!
+        // TODO deletes
     }
+    // TODO deletes of short-term news
 }
 
 void PerfectHashFunction::_configure(Configuration config, ULLONG data_length) {
@@ -155,6 +160,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
     }
     // TODO _tab_width here or in _createRandomTables?
     _tab_width = (short)ceil(log2(*max_bucket_size))+(short)config.additional_bits_tab;
+    // TODO assert(_tab_width <= 64);
     _offset = new ULLONG[_m+1];
     _offset[0] = 0;
     *max_mi = 0;
@@ -172,7 +178,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 }
 
 void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
-    //TODO implement this method!
+    //TODO check this method!
     char* hTables = new char[(2*_tab_rows)/4+1]();
     ULLONG* hashValues = new ULLONG[2*max_bucket_size];
     ULLONG* h0coeffs, h1coeffs;
@@ -226,12 +232,16 @@ void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_
     delete[] hashValues;
 }
 
-void PerfectHashFunction::_createRandomTables(ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
-    //TODO implement this method!
+void PerfectHashFunction::_createRandomTables(mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
+    //TODO check this method!
+    for(int i = 0; i < 6*_tab_rows; i++) {
+        _random_table[i] = (*dist)(*rng);
+    }
 }
 
 void PerfectHashFunction::_createRandomFactor(ULLONG bucket_num, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
-    //TODO implement this method!
+    //TODO check this method!
+    _random_factor[bucket_num] = (*dist)(*rng);
 }
 
 void PerfectHashFunction::_computeFij(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size,
