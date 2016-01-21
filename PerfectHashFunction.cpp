@@ -35,7 +35,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
     dist_h_coeffs = new uniform_int_distribution<ULLONG>(0, _h_mod_mask);
     // RNG end
 
-    _createGoodPairs(bucket_data, bucket_sizes, rng, dist_h_coeffs);
+    _createGoodPairs(bucket_data, bucket_sizes, max_bucket_size, rng, dist_h_coeffs);
 
     // RNG begin
     dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG)pow(2.0, _tab_width)-1);
@@ -86,17 +86,17 @@ void PerfectHashFunction::_createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_d
     }
 }
 
-ULLONG _evalUhf(ULLONG key, ULLONG* coeff, ULLONG modulus) {
+ULLONG _evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, ULLONG modulus) {
     // TODO check this method!
-    // & _h_split_mod_mask == Mod (_h_split_mod_mask+1) = Mod 2^l
-    // _h_split_mod_mask < 2^64
+    // & modMask == Mod (modMask+1) = Mod 2^l
+    // modMask < 2^64
     // => x*y Mod 2^l == (x*y Mod 2^64) Mod 2^l
     // x*y Mod 2^64 == unsigned long long multiplication ("without" overflow)
-    ULLONG mask = (ULLONG)pow(2.0, _k)-1;
-    ULLONG res = coeff[_l] & _h_split_mod_mask;
+    ULLONG keyMask = (ULLONG)pow(2.0, _k)-1;
+    ULLONG res = coeff[_l] & modMask;
     for(int i = _l-1; i >= 0; i--) {
-        res += (coeff[i] * (key & mask)) & _h_split_mod_mask;
-        res &= _h_split_mod_mask;
+        res += (coeff[i] * (key & keyMask)) & modMask;
+        res &= modMask;
         key >>= _k;
     }
     res >>= _k;
@@ -121,7 +121,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
     // counting
     for(int i = 0; i < data_length; i++) {
-        hv = _evalUhf(data[i], _h_split_coeffs, _m); // TODO save for usage in "sort data"?
+        hv = _evalUhf(data[i], _h_split_coeffs, _h_split_mod_mask, _m); // TODO save for usage in "sort data"?
         if(bucket_sizes[hv] >= bucketOverflowSize) {
             // bucket i overflow (too large)
             delete[] bucket_sizes;
@@ -144,7 +144,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
     // sort data
     splitted_data = new ULLONG[data_length];
     for(int i = data_length-1; i >= 0; i--) {
-        hv = _evalUhf(data[i], _h_split_coeffs, _m);
+        hv = _evalUhf(data[i], _h_split_coeffs, _h_split_mod_mask, _m);
         splitted_data[bucket_offsets[hv]-1] = data[i];
         bucket_offsets[hv]--;
     }
@@ -171,10 +171,59 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
     return true;
 }
 
-void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
+void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
     //TODO implement this method!
-    char* hTables = new char[_tab_rows/4+1]();
+    char* hTables = new char[(2*_tab_rows)/4+1]();
+    ULLONG* hashValues = new ULLONG[2*max_bucket_size];
+    ULLONG* h0coeffs, h1coeffs;
+    bool goodPair;
+    ULLONG x;
 
+    _h_coeffs = new ULLONG[2*_m*(_l+1)];
+    for(ULLONG pairI = 0; pairI < _m; pairI++) {
+        // TODO Makro?
+        h0coeffs = _h_coeffs + 2 * pairI * (_l + 1);
+        h1coeffs = h0coeffs + _l + 1;
+        goodPair = true;
+        do {
+            _createUhf(h0coeffs, rng, dist);
+            _createUhf(h1coeffs, rng, dist);
+            // counting
+            for(ULLONG j = 0; j < bucket_sizes[i]; j++) {
+                // compute hashvalues
+                x = bucket_data[pairI][j];
+                ARR(hashValues, bucket_sizes[i], 2, j, 0) = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_width);
+                ARR(hashValues, bucket_sizes[i], 2, j, 1) = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_width);
+                // count hashvalues
+                if(CHARBITPAIRTABS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) < 2) {
+                    CHARBITPAIRTABS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0))++;
+                }
+                if(CHARBITPAIRTABS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) < 2) {
+                    CHARBITPAIRTABS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1))++;
+                }
+            }
+            // evaluation
+            for(ULLONG j = 0; j < bucket_sizes[i] && goodPair; j++) {
+                // TODO &&
+                if (CHARBITPAIRTABS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) == 2) {
+                    if (CHARBITPAIRTABS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) == 2) {
+                        // pair not good
+                        goodPair = false;
+                    }
+                }
+            }
+            // clear hTables for counting
+            // TODO without condition?
+            if(pairI < _m-1 || !goodPair) {
+                for(ULLONG j = 0; j < bucket_sizes[i]; j++) {
+                    CHARBITPAIRTABS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) = 0;
+                    CHARBITPAIRTABS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) = 0;
+                }
+            }
+        } while(!goodPair);
+    }
+    delete[] hTables;
+    delete[] hashValues;
 }
 
 void PerfectHashFunction::_createRandomTables(ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
