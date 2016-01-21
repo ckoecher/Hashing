@@ -72,5 +72,36 @@ int main() {
         }
         cout << clock() - cl << " ticks" << endl;
     }
+    char* charArray;
+    cout << "new char[100]:";
+    charArray = new char[100];
+    for(int i = 0; i < 100; i++) {
+        cout << " " << (int)charArray[i];
+    }
+    cout << "\nnew char[100]():";
+    delete[] charArray;
+    charArray = new char[100]();
+    for(int i = 0; i < 100; i++) {
+        cout << " " << (int)charArray[i];
+    }
+    int* intArray;
+    cout << "\nnew int[100]:";
+    intArray = new int[100];
+    for(int i = 0; i < 100; i++) {
+        cout << " " << (int)intArray[i];
+    }
+    cout << "\nnew int[100]():";
+    delete[] intArray;
+    intArray = new int[100]();
+    for(int i = 0; i < 100; i++) {
+        cout << " " << (int)intArray[i];
+    }
+
+    delete rng;
+    delete dist_test;
+    delete[] c;
+    delete[] ctest;
+    delete[] charArray;
+    delete[] intArray;
     return 0;
 }

@@ -173,6 +173,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
 void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
     //TODO implement this method!
+    char* hTables = new char[_tab_rows/4+1]();
 
 }
 

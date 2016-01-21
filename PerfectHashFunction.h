@@ -28,7 +28,7 @@ private:
     // ordering: h^0_0, h^0_1, h^1_0, h^1_1, h^2_0, h^2_1, ...
     ULLONG _h_mod_mask;      // mask to compute MOD 2^(k+log(r)+c), value 2^(k+log(r)+c)-1, same for all HFs
     //short _h_div_bits = _h_split_div_bits = k
-    ULLONG _tab_rows;                // [_tab_rows] domain of HFs
+    ULLONG _tab_rows;                // [_tab_rows] domain of HFs (=r)
     ULLONG* _h_coeffs;        // [(2*m)*(l+1)] -> [2^(k+log(_tab_rows)+c)]=[_h_mod_mask + 1]
     // tables T^0_0, T^1_0, T^2_0, T^0_1, T^1_1, T^2_2
     // ordering: tables = columns, row-wise representation
