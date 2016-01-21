@@ -41,7 +41,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
     dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG)pow(2.0, _tab_width)-1);
     // RNG end
 
-    acyclicity_test_array = new ULLONG[max_mi * 3];
+    acyclicity_test_array = new ULLONG[max_mi * 3]();
     do {
         _createRandomTables(max_bucket_size, rng, dist_tables);
         badTables = false;
@@ -168,7 +168,6 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
     // deallocate
     delete[] bucket_offsets;
-    delete[] splitted_data;
     return true;
 }
 

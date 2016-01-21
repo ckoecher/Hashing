@@ -9,13 +9,21 @@
 #include <random>       // Mersenne twister mt19937
 //#include <functional>   // bind
 #include <assert.h>
+#include <ctime> // clock_t
 using namespace std;
 
 //typedef uint_fast64_t UINT;
 typedef unsigned long long int ULLONG;
 
 #define ARR(array, rows, cols, row, col) array[row*cols+col]
-#define CHARBITPAIR(array, index) (array[(ULLONG)index/4] >> 2*(3 - (index % 4))) % 4
+#define CHARBITPAIR(array, index) (array[index >> 2] >> 2*(3 - (index & 3))) % 4
+#define CHARBITPAIRTABS(array, tab, index) (char)(array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4
+// last % 4 not replaceable by & 3 ???
+// CHARBITPAIRTABS fastest solution
+
+// slower...
+#define CHARBITPAIR3(array, index) (array[index/4] >> 2*(3 - (index % 4))) % 4
+#define CHARBITPAIR2(array, index) (array[index >> 2] >> 2*(3 - (index % 4))) % 4
 
 struct Configuration {
     short k; // U = [(2^k)^l], k*l(<)=64, k>=1, l>=1

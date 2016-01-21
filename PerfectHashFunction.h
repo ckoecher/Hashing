@@ -50,7 +50,7 @@ private:
     void _createRandomFactor(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 10.1
     void _computeFij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2
     void _computeGij(ULLONG*); //step 11-12
-    bool _isCyclic(ULLONG, ULLONG*); //step 13+_g
+    bool _isCyclic(ULLONG, ULLONG*); //step 13+_g, reset acyclicity_test_array to zero...
 
 public:
     virtual ~PerfectHashFunction() { }
