@@ -201,18 +201,18 @@ void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_
                 ARR(hashValues, bucket_sizes[i], 2, j, 0) = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_width);
                 ARR(hashValues, bucket_sizes[i], 2, j, 1) = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_width);
                 // count hashvalues
-                if(CHARBITPAIRTABS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) < 2) {
-                    CHARBITPAIRTABS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0))++;
+                if(GETBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) < 2) {
+                    INCBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0));
                 }
-                if(CHARBITPAIRTABS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) < 2) {
-                    CHARBITPAIRTABS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1))++;
+                if(GETBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) < 2) {
+                    INCBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1));
                 }
             }
             // evaluation
             for(ULLONG j = 0; j < bucket_sizes[i] && goodPair; j++) {
                 // TODO &&
-                if (CHARBITPAIRTABS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) == 2) {
-                    if (CHARBITPAIRTABS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) == 2) {
+                if (GETBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) == 2) {
+                    if (GETBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) == 2) {
                         // pair not good
                         goodPair = false;
                     }
@@ -222,8 +222,8 @@ void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_
             // TODO without condition?
             if(pairI < _m-1 || !goodPair) {
                 for(ULLONG j = 0; j < bucket_sizes[i]; j++) {
-                    CHARBITPAIRTABS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) = 0;
-                    CHARBITPAIRTABS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) = 0;
+                    ZEROBITPAIRS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0));
+                    ZEROBITPAIRS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1));
                 }
             }
         } while(!goodPair);

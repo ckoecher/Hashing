@@ -16,6 +16,18 @@ using namespace std;
 typedef unsigned long long int ULLONG;
 
 #define ARR(array, rows, cols, row, col) array[row*cols+col]
+
+// array of type char*
+#define GETBITPAIR(array, tab, index) (array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4
+inline char getBitPair(char* array, short tab, ULLONG index) {
+    return (array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) & 3;
+}
+#define INCBITPAIR(array, tab, index) array[index >> 1] = array[index >> 1] + (1 << ((1-tab)<<1) << ((1-(index&1))<<2))
+#define ZEROBITPAIRS(array, tab, index) array[index >> 1] = 0
+// TODO ATTENTION: does not only reset array_tab[index] to zero BUT complete char array element!
+
+
+// NOT USABLE
 #define CHARBITPAIR(array, index) (array[index >> 2] >> 2*(3 - (index & 3))) % 4
 #define CHARBITPAIRTABS(array, tab, index) (char)(array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4
 // last % 4 not replaceable by & 3 ???

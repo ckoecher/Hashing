@@ -2,7 +2,7 @@
 #include "PerfectHashFunction.h"
 
 void testTypeSizes() {
-    cout << "Bytes of char: " << sizeof(char) << endl;
+    cout << "\nBytes of char: " << sizeof(char) << endl;
     assert(sizeof(char) == 1);
     cout << "Bytes of ULLONG: " << sizeof(ULLONG) << endl;
     assert(sizeof(ULLONG) == 8);
@@ -12,7 +12,7 @@ void testTypeSizes() {
 
 void testMersenneTwister() {
     unsigned long seed;
-    cout << "seed = ";
+    cout << "\nseed = ";
     cin >> seed;
     mt19937* rng;
     rng = new mt19937(seed);
@@ -25,8 +25,8 @@ void testMersenneTwister() {
     delete dist_test;
 }
 
-void testBitpairs() {
-    cout << "Test of CHARBITPAIR:" << endl;
+void testOldBitpairs() {
+    cout << "\nTest of CHARBITPAIR:" << endl;
     char* c = new char[16];
     cout << "\tchar array:";
     for(char i = 0; i < 16; i++) {
@@ -96,18 +96,98 @@ void testBitpairs() {
     cout << "\nnew int[100]:";
     intArray = new int[100];
     for(int i = 0; i < 100; i++) {
-        cout << " " << (int)intArray[i];
+        cout << " " << intArray[i];
     }
     cout << "\nnew int[100]():";
     delete[] intArray;
     intArray = new int[100]();
     for(int i = 0; i < 100; i++) {
-        cout << " " << (int)intArray[i];
+        cout << " " << intArray[i];
     }
     delete[] c;
     delete[] ctest;
     delete[] charArray;
     delete[] intArray;
+}
+
+void testBitPairs() {
+    cout << "\nNew BitPair implementation: carray[16]";
+    int n = 16;
+    clock_t cl;
+    char* carray = new char[n]();
+    char c;
+    cout << "carray:";
+    for(int i = 0; i < n; i++) {
+        carray[i] = i;
+        cout << carray[i];
+    }
+    cout << "\nGETBITPAIR content:";
+    for(int i = 0; i < 2*n; i++) {
+        for(int j = 0; j < 2; j++) {
+            cout << " " << GETBITPAIR(carray, j, i);
+        }
+        cout << " #";
+    }
+    cout << "\ngetBitPair content:";
+    for(int i = 0; i < 2*n; i++) {
+        for(short j = 0; j < 2; j++) {
+            cout << " " << (int)getBitPair(carray, j, i);
+        }
+        cout << " #";
+    }
+    cout << "\nZEROBITPAIRS content:";
+    for(int i = 0; i < 2*n; i++) {
+        for(int j = 0; j < 2; j++) {
+            ZEROBITPAIRS(carray, j, i);
+        }
+    }
+    for(int i = 0; i < 2*n; i++) {
+        for(int j = 0; j < 2; j++) {
+            cout << " " << GETBITPAIR(carray, j, i);
+        }
+        cout << " #";
+    }
+    cout << "\nINCBITPAIR content:";
+    for(int i = 0; i < 2*n; i++) {
+        for(int j = 0; j < 2; j++) {
+            if(i % 2 == 1) {
+                INCBITPAIR(carray, j, i);
+                INCBITPAIR(carray, j, i);
+            }
+            if(j == 1) {
+                INCBITPAIR(carray, j, i);
+            }
+        }
+    }
+    for(int i = 0; i < 2*n; i++) {
+        for(int j = 0; j < 2; j++) {
+            cout << " " << GETBITPAIR(carray, j, i);
+        }
+        cout << " #";
+    }
+    cout << "\nn = ";
+    cin >> n;
+    delete[] carray;
+    carray = new char[n];
+    for(int round = 0; round < 5; round++) {
+        cout << "\nGETBITPAIR time to read: ";
+        cl = clock();
+        for(int i = 0; i < 2*n; i++) {
+            for(int j = 0; j < 2; j++) {
+                c = GETBITPAIR(carray, j, i);
+            }
+        }
+        cout << clock() - cl << " ticks";
+        cout << "\ngetBitPair time to read: ";
+        cl = clock();
+        for(int i = 0; i < 2*n; i++) {
+            for(short j = 0; j < 2; j++) {
+                c = getBitPair(carray, j, i);
+            }
+        }
+        cout << clock() - cl << " ticks";
+    }
+    delete[] carray;
 }
 
 void readConfigs(char* filename, Configuration* configs, ULLONG* numOfConfigs) {
@@ -120,8 +200,10 @@ void readData(char* filename, ULLONG* data, ULLONG* data_length) {
 }
 
 int main() {
+    testBitPairs();
     testTypeSizes();
     testMersenneTwister();
-    testBitpairs();
+    testOldBitpairs();
+
     return 0;
 }
