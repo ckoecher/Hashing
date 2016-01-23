@@ -1,13 +1,16 @@
 #include "definitions.h"
 #include "PerfectHashFunction.h"
 
-int main() {
+void testTypeSizes() {
     cout << "Bytes of char: " << sizeof(char) << endl;
     assert(sizeof(char) == 1);
     cout << "Bytes of ULLONG: " << sizeof(ULLONG) << endl;
     assert(sizeof(ULLONG) == 8);
     cout << "Bytes of double: " << sizeof(double) << ", long double: " << sizeof(long double) << endl;
     assert(sizeof(long double) == 16);
+}
+
+void testMersenneTwister() {
     unsigned long seed;
     cout << "seed = ";
     cin >> seed;
@@ -18,6 +21,11 @@ int main() {
     for(int i=0; i < 10; i++) {
         cout << (*dist_test)(*rng) << endl;
     }
+    delete rng;
+    delete dist_test;
+}
+
+void testBitpairs() {
     cout << "Test of CHARBITPAIR:" << endl;
     char* c = new char[16];
     cout << "\tchar array:";
@@ -96,12 +104,24 @@ int main() {
     for(int i = 0; i < 100; i++) {
         cout << " " << (int)intArray[i];
     }
-
-    delete rng;
-    delete dist_test;
     delete[] c;
     delete[] ctest;
     delete[] charArray;
     delete[] intArray;
+}
+
+void readConfigs(char* filename, Configuration* configs, ULLONG* numOfConfigs) {
+    // reads configuration data from "filename"
+    // numOfConfigs configurations -> configs = new Configuration[numOfConfigs]
+}
+
+void readData(char* filename, ULLONG* data, ULLONG* data_length) {
+    // reads one set of data
+}
+
+int main() {
+    testTypeSizes();
+    testMersenneTwister();
+    testBitpairs();
     return 0;
 }
