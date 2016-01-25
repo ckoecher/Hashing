@@ -30,7 +30,8 @@ private:
     //short _h_div_bits = _h_split_div_bits = k
     ULLONG _tab_rows;                // [_tab_rows] domain of HFs (=r)
     ULLONG* _h_coeffs;        // [(2*m)*(l+1)] -> [2^(k+log(_tab_rows)+c)]=[_h_mod_mask + 1]
-    // tables T^0_0, T^1_0, T^2_0, T^0_1, T^1_1, T^2_2
+    // tables T^0_0, T^1_0, T^2_0, T^0_1, T^1_1, T^2_1
+    //TODO is it better to save in order T^0_0, T^0_1, T^1_0, T^1_1, T^2_0, T^2_1?
     // ordering: tables = columns, row-wise representation
     //_tab_rows = number of rows of each table
     short _tab_width;       // = b = number of bits of each table entry (b = log(max ni) + c)
@@ -48,8 +49,7 @@ private:
     void _createGoodPairs(ULLONG**, ULLONG*, ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 8
     void _createRandomTables(mt19937*, uniform_int_distribution<ULLONG>*); //step 9
     void _createRandomFactor(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 10.1
-    void _computeFij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2
-    void _computeGij(ULLONG*); //step 11-12
+    void _computeGij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2, 11-12
     bool _isCyclic(ULLONG, ULLONG*); //step 13+_g, reset acyclicity_test_array to zero...
 
 public:

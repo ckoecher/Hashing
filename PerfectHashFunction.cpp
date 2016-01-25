@@ -5,7 +5,7 @@
 #include "definitions.h"
 
 PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_length, ULLONG *data) {
-    ULLONG* splitted_data; // => B in (2)
+    ULLONG *splitted_data; // => B in (2)
     ULLONG **bucket_data; //= new ULLONG*[_m] => S[i] in (7) // TODO only needs normal delete[] because of splitted_data (!?)
     ULLONG *bucket_sizes; //= Array of ni's
     ULLONG max_bucket_size, max_mi;
@@ -55,8 +55,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
             do {
                 _createRandomFactor(i, rng, dist_tables);
                 num_of_tries_si++;
-                _computeFij(i, acyclicity_test_array, bucket_sizes[i], bucket_data[i]);
-                _computeGij(acyclicityTestArray);
+                _computeGij(i, acyclicity_test_array, bucket_sizes[i], bucket_data[i]);
                 badFactor = _isCyclic(i, acyclicity_test_array);
             } while(badFactor && num_of_tries_si < config.num_of_tries_random_si);
 
@@ -244,13 +243,44 @@ void PerfectHashFunction::_createRandomFactor(ULLONG bucket_num, mt19937* rng, u
     _random_factor[bucket_num] = (*dist)(*rng);
 }
 
-void PerfectHashFunction::_computeFij(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size,
+void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size,
                                       ULLONG *bucket) {
-    //TODO implement this method!
-}
+    //TODO check this method!
+    ULLONG h0value, h1value, fi0, fi1, fi2;
+    ULLONG *h0coeffs = _h_coeffs + 2 * bucket_num * (_l + 1);
+    ULLONG *h1coeffs = h0coeffs + _l + 1;
+    ULLONG x;
+    ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
+    for(ULLONG k = 0; k < bucket_size; k++) {
+        x = bucket[k];
+        h0value = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_width);
+        h1value = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_width);
 
-void PerfectHashFunction::_computeGij(ULLONG *acyclicity_test_array) {
-    //TODO implement this method!
+        //compute the values of the fij(x)
+        fi0 = ((ARR(_random_table, 0, 6, h0value, 0) * _random_factor[bucket_num]) ^ ARR(_random_table, 0, 6, h1value, 1)) % mi;
+        fi1 = ((ARR(_random_table, 0, 6, h0value, 2) * _random_factor[bucket_num]) ^ ARR(_random_table, 0, 6, h1value, 3)) % (mi - 1);
+        fi2 = ((ARR(_random_table, 0, 6, h0value, 4) * _random_factor[bucket_num]) ^ ARR(_random_table, 0, 6, h1value, 5)) % (mi - 2);
+        //TODO: add number of rows and check if the column is correct
+
+        //compute the values of the gij(x)
+        if(fi1 >= fi0) {
+            fi1++;
+        }
+        if(fi2 >= fi0) {
+            if(fi2 >= fi1) {
+                fi2 += 2;
+            } else {
+                fi2++;
+            }
+        } else if(fi2 >= fi1) {
+            fi2++;
+        }
+
+        //save the values in the array
+        ARR(acyclicity_test_array, bucket_size, 3, k, 0) = fi0;
+        ARR(acyclicity_test_array, bucket_size, 3, k, 1) = fi1;
+        ARR(acyclicity_test_array, bucket_size, 3, k, 2) = fi2;
+    }
 }
 
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array) {
