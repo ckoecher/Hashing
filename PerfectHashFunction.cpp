@@ -260,7 +260,7 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
         fi0 = ((ARR(_random_table, 0, 6, h0value, 0) * _random_factor[bucket_num]) ^ ARR(_random_table, 0, 6, h1value, 1)) % mi;
         fi1 = ((ARR(_random_table, 0, 6, h0value, 2) * _random_factor[bucket_num]) ^ ARR(_random_table, 0, 6, h1value, 3)) % (mi - 1);
         fi2 = ((ARR(_random_table, 0, 6, h0value, 4) * _random_factor[bucket_num]) ^ ARR(_random_table, 0, 6, h1value, 5)) % (mi - 2);
-        //TODO: add number of rows and check if the column is correct
+        //TODO: add number of rows
 
         //compute the values of the gij(x)
         if(fi1 >= fi0) {

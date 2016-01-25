@@ -30,8 +30,7 @@ private:
     //short _h_div_bits = _h_split_div_bits = k
     ULLONG _tab_rows;                // [_tab_rows] domain of HFs (=r)
     ULLONG* _h_coeffs;        // [(2*m)*(l+1)] -> [2^(k+log(_tab_rows)+c)]=[_h_mod_mask + 1]
-    // tables T^0_0, T^1_0, T^2_0, T^0_1, T^1_1, T^2_1
-    //TODO is it better to save in order T^0_0, T^0_1, T^1_0, T^1_1, T^2_0, T^2_1?
+    // tables T^0_0, T^0_1, T^1_0, T^1_1, T^2_0, T^2_1
     // ordering: tables = columns, row-wise representation
     //_tab_rows = number of rows of each table
     short _tab_width;       // = b = number of bits of each table entry (b = log(max ni) + c)
