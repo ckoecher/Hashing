@@ -56,7 +56,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
                 _createRandomFactor(i, rng, dist_tables);
                 num_of_tries_si++;
                 _computeGij(i, acyclicity_test_array, bucket_sizes[i], bucket_data[i]);
-                badFactor = _isCyclic(i, acyclicity_test_array);
+                badFactor = _isCyclic(i, acyclicity_test_array, bucket_sizes[i]);
             } while(badFactor && num_of_tries_si < config.num_of_tries_random_si);
 
             if(badFactor) {
@@ -285,7 +285,25 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
     }
 }
 
-bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array) {
+bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
+    //construct a list of adjacent edges of each node
+    ULLONG max_length = 2*log2(bucket_size);
+    ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
+    ULLONG *edgesOf = new ULLONG[max_length * mi]();
+    ULLONG *cEdgesOf = new ULLONG[mi]();
+    ULLONG gValue;
+
+    for(ULLONG j = 0; j < bucket_size; j++) {
+        for(int k = 0; k < 3; k++) {
+            gValue = ARR(acyclicity_test_array, bucket_size, 3, j, k);
+            ARR(edgesOf, mi, max_length, gValue, cEdgesOf[gValue]) = j;
+            cEdgesOf[gValue]++;
+            if(cEdgesOf[gValue] == max_length) { //an overflow here
+                return true; //TODO is this right
+            }
+        }
+    }
+
     //TODO implement this method!
     return false;
 }

@@ -49,7 +49,7 @@ private:
     void _createRandomTables(mt19937*, uniform_int_distribution<ULLONG>*); //step 9
     void _createRandomFactor(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 10.1
     void _computeGij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2, 11-12
-    bool _isCyclic(ULLONG, ULLONG*); //step 13+_g, reset acyclicity_test_array to zero...
+    bool _isCyclic(ULLONG, ULLONG*, ULLONG); //step 13+_g, reset acyclicity_test_array to zero...
 
 public:
     virtual ~PerfectHashFunction() { }
