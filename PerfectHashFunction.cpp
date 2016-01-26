@@ -286,24 +286,56 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 }
 
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
-    //construct a list of adjacent edges of each node
     ULLONG max_length = 2*log2(bucket_size);
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
     ULLONG *edgesOf = new ULLONG[max_length * mi]();
     ULLONG *cEdgesOf = new ULLONG[mi]();
     ULLONG gValue;
+    bool *removed = new bool[bucket_size](); //TODO shouldn't we use char, int or something similar here?
+    std::queue<ULLONG> queue;
 
+    //construct a list of adjacent edges of each node
     for(ULLONG j = 0; j < bucket_size; j++) {
         for(int k = 0; k < 3; k++) {
             gValue = ARR(acyclicity_test_array, bucket_size, 3, j, k);
             ARR(edgesOf, mi, max_length, gValue, cEdgesOf[gValue]) = j;
             cEdgesOf[gValue]++;
             if(cEdgesOf[gValue] == max_length) { //an overflow here
-                return true; //TODO is this right
+                delete[] edgesOf;
+                delete[] cEdgesOf;
+                delete[] removed;
+                delete[] queue;
+                return true; //TODO is this right?
             }
         }
     }
 
+    //now check for acyclicity
+    for(ULLONG j = 0; j < mi; j++) {
+        if(cEdgesOf[j] == 1 && !removed[ARR(edgesOf, mi, max_length, j, 0)]) {
+            peelOf(0, j, queue, edgesOf, cEdgesOf, max_length, mi);
+        }
+    }
+
+    if(queue.size() != bucket_size) {
+        delete[] edgesOf;
+        delete[] cEdgesOf;
+        delete[] removed;
+        delete[] queue;
+        return true;
+    }
+
+    //now assign the values
     //TODO implement this method!
+
+    delete[] edgesOf;
+    delete[] cEdgesOf;
+    delete[] removed;
+    delete[] queue;
     return false;
+}
+
+void peelOf(ULLONG edge_index, ULLONG vertex_index, std::queue<ULLONG> queue, ULLONG *edgesOf, ULLONG *cEdgesOf,
+            ULLONG max_length, ULLONG mi) {
+    //TODO implement this method!
 }
