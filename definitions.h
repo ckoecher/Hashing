@@ -37,6 +37,11 @@ inline char getBitPair(char* array, short tab, ULLONG index) {
 #define CHARBITPAIR3(array, index) (array[index/4] >> 2*(3 - (index % 4))) % 4
 #define CHARBITPAIR2(array, index) (array[index >> 2] >> 2*(3 - (index % 4))) % 4
 
+
+//
+#define GETBIT(array, index) (array[index >> 3]) >> (index & 7) & 1
+#define SETBIT(array, index) array[index >> 3] |= (1 << (index & 7))
+
 struct Configuration {
     short k; // U = [(2^k)^l], k*l(<)=64, k>=1, l>=1
     short l;

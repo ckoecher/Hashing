@@ -291,8 +291,9 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     ULLONG *edgesOf = new ULLONG[max_length * mi]();
     ULLONG *cEdgesOf = new ULLONG[mi]();
     ULLONG gValue;
-    bool *removed = new bool[bucket_size](); //TODO shouldn't we use char, int or something similar here?
-    std::queue<ULLONG> queue;
+    ULLONG *queue = new ULLONG[bucket_size];
+    ULLONG next_queue_index = 0;
+    char *removed = new char[(bucket_size >> 3) + 1]();
 
     //construct a list of adjacent edges of each node
     for(ULLONG j = 0; j < bucket_size; j++) {
@@ -312,12 +313,12 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
 
     //now check for acyclicity
     for(ULLONG j = 0; j < mi; j++) {
-        if(cEdgesOf[j] == 1 && !removed[ARR(edgesOf, mi, max_length, j, 0)]) {
-            peelOf(0, j, queue, edgesOf, cEdgesOf, max_length, mi);
+        if(cEdgesOf[j] == 1 && !GETBIT(removed, ARR(edgesOf, mi, max_length, j, 0))) {
+            peelOf(0, j, &queue, &next_queue_index, &edgesOf, &cEdgesOf, max_length, mi);
         }
     }
 
-    if(queue.size() != bucket_size) {
+    if(next_queue_index != bucket_size) {
         delete[] edgesOf;
         delete[] cEdgesOf;
         delete[] removed;
@@ -335,7 +336,7 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     return false;
 }
 
-void peelOf(ULLONG edge_index, ULLONG vertex_index, std::queue<ULLONG> queue, ULLONG *edgesOf, ULLONG *cEdgesOf,
-            ULLONG max_length, ULLONG mi) {
+void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* queue, ULLONG next_queue_index, ULLONG *edgesOf,
+            ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi) {
     //TODO implement this method!
 }
