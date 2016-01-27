@@ -290,7 +290,7 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
     ULLONG *edgesOf = new ULLONG[max_length * mi]();
     ULLONG *cEdgesOf = new ULLONG[mi]();
-    ULLONG gValue;
+    ULLONG gValue, vertex_index;
     ULLONG *queue = new ULLONG[bucket_size];
     ULLONG next_queue_index = 0;
     char *removed = new char[(bucket_size >> 3) + 1]();
@@ -313,8 +313,12 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
 
     //now check for acyclicity
     for(ULLONG j = 0; j < mi; j++) {
-        if(cEdgesOf[j] == 1 && !GETBIT(removed, ARR(edgesOf, mi, max_length, j, 0))) {
-            peelOf(0, j, &queue, &next_queue_index, &edgesOf, &cEdgesOf, max_length, mi);
+        if(cEdgesOf[j] == 1) {
+            vertex_index = ARR(edgesOf, mi, max_length, j, 0);
+            if(!GETBIT(removed, vertex_index)) {
+                peelOf(j, vertex_index, acyclicity_test_array, bucket_size, &queue, &next_queue_index, &edgesOf,
+                       &cEdgesOf, max_length, mi, &removed);
+            }
         }
     }
 
@@ -336,7 +340,34 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     return false;
 }
 
-void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* queue, ULLONG next_queue_index, ULLONG *edgesOf,
-            ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi) {
-    //TODO implement this method!
+void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_text_array, ULLONG bucket_size, ULLONG* queue,
+            ULLONG next_queue_index, ULLONG *edgesOf, ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, char* removed) {
+    ULLONG gValue, next_vertex;
+
+    //mark the edge as removed
+    SETBIT(removed, edge_index);
+    queue[next_queue_index] = edge_index;
+    next_queue_index++;
+
+    //remove the edge from all incident nodes
+    for(int k = 0; k < 3; k++) {
+        gValue = ARR(acyclicity_text_array, bucket_size, 3, j, k);
+        if(gValue != vertex_index) {
+            for(ULLONG l = 0; l < cEdgesOf[gValue]; l++) {
+                if(ARR(edgesOf, mi, max_length, gValue, l) == edge_index) {
+                    ARR(edgesOf, mi, max_length, gValue, l) = ARR(edgesOf, mi, max_length, gValue, cEdgesOf[gValue] - 1);
+                    cEdgesOf[gValue]--;
+                }
+            }
+
+            //now do recursion on these nodes, if needed
+            if(cEdgesOf[gValue] == 1) {
+                next_vertex = ARR(edgesOf, mi, max_length, gValue, 0);
+                if(!GETBIT(removed, next_vertex)) {
+                    peelOf(gValue, next_vertex, acyclicity_text_array, bucket_size, &queue, &next_queue_index, &edgesOf,
+                           &cEdgesOf, max_length, mi, &removed);
+                }
+            }
+        }
+    }
 }
