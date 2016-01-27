@@ -45,6 +45,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
 
     _random_table = new ULLONG[6*_tab_rows];
     _random_factor = new ULLONG[_m]; // TODO 3*_m for factors s_(i,j)
+    _g = new char[(_offset[_m] >> 2) + 1]();
     do {
         _createRandomTables(rng, dist_tables);
         badTables = false;
@@ -286,14 +287,17 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 }
 
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
+    //TODO check this method!
     ULLONG max_length = 2*log2(bucket_size);
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
     ULLONG *edgesOf = new ULLONG[max_length * mi]();
     ULLONG *cEdgesOf = new ULLONG[mi]();
-    ULLONG gValue, vertex_index;
+    ULLONG gValue, vertex_index, u;
     ULLONG *queue = new ULLONG[bucket_size];
     ULLONG next_queue_index = 0;
     char *removed = new char[(bucket_size >> 3) + 1]();
+    char *visited = new char[(mi >> 3) + 1]();
+    int c, sum;
 
     //construct a list of adjacent edges of each node
     for(ULLONG j = 0; j < bucket_size; j++) {
@@ -304,8 +308,9 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
             if(cEdgesOf[gValue] == max_length) { //an overflow here
                 delete[] edgesOf;
                 delete[] cEdgesOf;
-                delete[] removed;
                 delete[] queue;
+                delete[] removed;
+                delete[] visited;
                 return true; //TODO is this right?
             }
         }
@@ -325,18 +330,36 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     if(next_queue_index != bucket_size) {
         delete[] edgesOf;
         delete[] cEdgesOf;
-        delete[] removed;
         delete[] queue;
+        delete[] removed;
+        delete[] visited;
         return true;
     }
 
     //now assign the values
-    //TODO implement this method!
+    for(ULLONG u = _offset[bucket_num]; u < _offset[bucket_num + 1]; u++) {
+        SETCHARBITPAIR(_g, u, 0);
+    }
+    for(ULLONG j = next_queue_index - 1; j >= 0; j--) {
+        sum = 0;
+        for(int k = 2; k >= 0; k--) {
+            gValue = ARR(acyclicity_test_array, bucket_size, 3, l, k);
+            if(!GETBIT(visited, gValue)) {
+                u = gValue;
+                SETBIT(visited, gValue, 1);
+                c = k;
+            } else {
+                sum += GETCHARBITPAIR(_g, _offset[bucket_num] + gValue);
+            }
+        }
+        SETCHARBITPAIR(_g, _offset[bucket_num] + u, (c - sum) % 3);
+    }
 
     delete[] edgesOf;
     delete[] cEdgesOf;
-    delete[] removed;
     delete[] queue;
+    delete[] removed;
+    delete[] visited;
     return false;
 }
 
@@ -345,7 +368,7 @@ void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_text_arra
     ULLONG gValue, next_vertex;
 
     //mark the edge as removed
-    SETBIT(removed, edge_index);
+    SETBIT(removed, edge_index, 1);
     queue[next_queue_index] = edge_index;
     next_queue_index++;
 
@@ -361,7 +384,7 @@ void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_text_arra
             }
 
             //now do recursion on these nodes, if needed
-            if(cEdgesOf[gValue] == 1) {
+            if(cEdgesOf[gValue] == 1) { //TODO: maybe we need to do this in a new loop
                 next_vertex = ARR(edgesOf, mi, max_length, gValue, 0);
                 if(!GETBIT(removed, next_vertex)) {
                     peelOf(gValue, next_vertex, acyclicity_text_array, bucket_size, &queue, &next_queue_index, &edgesOf,
