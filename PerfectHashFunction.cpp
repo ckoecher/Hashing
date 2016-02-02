@@ -5,17 +5,17 @@
 #include "definitions.h"
 
 PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_length, ULLONG *data) {
-    ULLONG *splitted_data; // => B in (2)
-    ULLONG **bucket_data; //= new ULLONG*[_m] => S[i] in (7) // TODO only needs normal delete[] because of splitted_data (!?)
-    ULLONG *bucket_sizes; //= Array of ni's
+    ULLONG *splitted_data = nullptr; // => B in (2)
+    ULLONG **bucket_data = nullptr; //= new ULLONG*[_m] => S[i] in (7) // TODO only needs normal delete[] because of splitted_data (!?)
+    ULLONG *bucket_sizes = nullptr; //= Array of ni's
     ULLONG max_bucket_size, max_mi;
-    ULLONG *acyclicity_test_array;
+    ULLONG *acyclicity_test_array = nullptr;
     bool badTables, badFactor;
     short num_of_tries_tab = 0, num_of_tries_si;
 
     // RNG begin
-    mt19937* rng;
-    uniform_int_distribution<ULLONG>* dist_h_split_coeffs, dist_h_coeffs, dist_tables;
+    mt19937* rng = nullptr;
+    uniform_int_distribution<ULLONG>* dist_h_split_coeffs = nullptr, dist_h_coeffs = nullptr, dist_tables = nullptr;
     // RNG end
 
     _configure(config, data_length);
@@ -38,7 +38,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
     _createGoodPairs(bucket_data, bucket_sizes, max_bucket_size, rng, dist_h_coeffs);
 
     // RNG begin
-    dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG)pow(2.0, _tab_width)-1);
+    dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG)pow(2.0l, _tab_width)-1);
     // RNG end
 
     acyclicity_test_array = new ULLONG[max_mi * 3]();
@@ -67,11 +67,22 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
         }
     } while(badTables && num_of_tries_tab < config.num_of_tries_random_tab);
 
+    // delete temporary data
+    // delete nullptr has no effect
+    delete[] splitted_data;
+    delete[] bucket_sizes;
+    delete[] acyclicity_test_array;
+    delete rng;
+    delete dist_h_split_coeffs;
+    delete dist_h_coeffs;
+    delete dist_tables;
+
     if(badTables) {
+        // construction not successful
+        _clear();
         //TODO throw an exception!!!!
-        // TODO deletes
+        throw 0;
     }
-    // TODO deletes of short-term news
 }
 
 void PerfectHashFunction::_configure(Configuration config, ULLONG data_length) {
@@ -79,9 +90,9 @@ void PerfectHashFunction::_configure(Configuration config, ULLONG data_length) {
     _k = config.k;
     _l = config.l;
     _m = (ULLONG)ceil(config.m_coeff * pow(data_length, config.m_exp));
-    _h_split_mod_mask = (ULLONG)pow(2.0, _k + ceil(log2(_m)) + config.additional_bits_uhf)-1;
+    _h_split_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_m)) + config.additional_bits_uhf)-1;
     _tab_rows = (ULLONG)ceil(config.tab_rows_coeff * pow(data_length, config.tab_rows_exp));
-    _h_mod_mask = (ULLONG)pow(2.0, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
+    _h_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
 }
 
 void PerfectHashFunction::_createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
@@ -97,7 +108,7 @@ ULLONG _evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, ULLONG modulus) {
     // modMask < 2^64
     // => x*y Mod 2^l == (x*y Mod 2^64) Mod 2^l
     // x*y Mod 2^64 == unsigned long long multiplication ("without" overflow)
-    ULLONG keyMask = (ULLONG)pow(2.0, _k)-1;
+    ULLONG keyMask = (ULLONG)pow(2.0l, _k)-1;
     ULLONG res = coeff[_l] & modMask;
     for(int i = _l-1; i >= 0; i--) {
         res += (coeff[i] * (key & keyMask)) & modMask;
@@ -118,7 +129,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
     // initialization and instantiation
     // ULLONG* splitted_data; // == B // external for better deallocation
-    ULLONG* bucket_offsets; // == C[i]
+    ULLONG* bucket_offsets = nullptr; // == C[i]
     bucket_sizes = new ULLONG[_m](); // == n_i; initialized to zero because of ()
     ULLONG hv; // hash value by h_split
     ULLONG mi_1; // for computation of max_mi and _offset
@@ -154,7 +165,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
         bucket_offsets[hv]--;
     }
     bucket_data = new ULLONG*[_m]; // bucket_data[i] == S[i] TODO or _m+1? (should not be needed...)
-    bucket_data[i] = splitted_data;
+    bucket_data[0] = splitted_data;
     for(int i = 1; i < _m; i++) {
         bucket_data[i] = bucket_data[i-1] + bucket_sizes[i-1];
     }
@@ -179,16 +190,16 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
 void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
     //TODO check this method!
-    char* hTables = new char[(2*_tab_rows)/4+1]();
-    ULLONG* hashValues = new ULLONG[2*max_bucket_size];
-    ULLONG* h0coeffs, h1coeffs;
+    char* hTables = new char[(_tab_rows>>1)+1](); // (2*_tab_rows)/4+1
+    ULLONG* hashValues = new ULLONG[max_bucket_size<<1]; // 2*max_bucket_size
+    ULLONG* h0coeffs = nullptr, h1coeffs = nullptr;
     bool goodPair;
     ULLONG x;
 
-    _h_coeffs = new ULLONG[2*_m*(_l+1)];
+    _h_coeffs = new ULLONG[(_m*(_l+1))<<1]; // 2*_m*(_l+1)
     for(ULLONG pairI = 0; pairI < _m; pairI++) {
         // TODO Makro?
-        h0coeffs = _h_coeffs + 2 * pairI * (_l + 1);
+        h0coeffs = _h_coeffs + ((pairI * (_l + 1))<<1); // _h_coeffs + 2 * pairI * (_l + 1)
         h1coeffs = h0coeffs + _l + 1;
         goodPair = true;
         do {
@@ -248,7 +259,7 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
                                       ULLONG *bucket) {
     //TODO check this method!
     ULLONG h0value, h1value, fi0, fi1, fi2;
-    ULLONG *h0coeffs = _h_coeffs + 2 * bucket_num * (_l + 1);
+    ULLONG *h0coeffs = _h_coeffs + ((bucket_num * (_l + 1))<<1); // _h_coeffs + 2 * bucket_num * (_l + 1)
     ULLONG *h1coeffs = h0coeffs + _l + 1;
     ULLONG x;
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
@@ -288,7 +299,8 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
     //TODO check this method!
-    ULLONG max_length = 2*log2(bucket_size);
+    // TODO new for queue, removed and visited after first loop?
+    ULLONG max_length = 2*log2(bucket_size); // TODO <<1 ??? (after cast?)
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
     ULLONG *edgesOf = new ULLONG[max_length * mi]();
     ULLONG *cEdgesOf = new ULLONG[mi]();
@@ -365,6 +377,7 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
 
 void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_test_array, ULLONG bucket_size, ULLONG* queue,
             ULLONG next_queue_index, ULLONG *edgesOf, ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, char* removed) {
+    // TODO check this method
     ULLONG gValue, next_edge;
 
     //mark the edge as removed
@@ -397,13 +410,14 @@ void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_test_arra
 }
 
 ULLONG PerfectHashFunction::evaluate(ULLONG x) {
+    // TODO check this method
     ULLONG i, h0value, h1value, g0value, g1value, g2value, mi;
-    ULLONG *h0coeffs, *h1coeffs;
+    ULLONG *h0coeffs = nullptr, *h1coeffs = nullptr;
     int sum;
 
     //find the bucket
     i = _evalUhf(x, _h_split_coeffs, _h_split_mod_mask, _m);
-    h0coeffs = _h_coeffs + 2 * i * (_l + 1);
+    h0coeffs = _h_coeffs + ((i * (_l + 1))<<1); // _h_coeffs + 2 * i * (_l + 1)
     h1coeffs = h0coeffs + _l + 1;
     mi = _offset[i+1] - _offset[i];
 
@@ -445,4 +459,14 @@ ULLONG PerfectHashFunction::evaluate(ULLONG x) {
         default: //value 2
             return g2value;
     }
+}
+
+void PerfectHashFunction::_clear() {
+    // TODO check this method
+    delete[] _offset;
+    delete[] _h_split_coeffs;
+    delete[] _h_coeffs;
+    delete[] _random_table;
+    delete[] _random_factor;
+    delete[] _g;
 }
