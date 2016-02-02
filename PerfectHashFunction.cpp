@@ -395,3 +395,54 @@ void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_test_arra
         }
     }
 }
+
+ULLONG PerfectHashFunction::evaluate(ULLONG x) {
+    ULLONG i, h0value, h1value, g0value, g1value, g2value, mi;
+    ULLONG *h0coeffs, *h1coeffs;
+    int sum;
+
+    //find the bucket
+    i = _evalUhf(x, _h_split_coeffs, _h_split_mod_mask, _m);
+    h0coeffs = _h_coeffs + 2 * i * (_l + 1);
+    h1coeffs = h0coeffs + _l + 1;
+    mi = _offset[i+1] - _offset[i];
+
+    //compute the values of hij(x)
+    h0value = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_width);
+    h1value = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_width);
+
+    //compute the values of fij(x)
+    //consider that we're adding the offset here as we need this later multiple times
+    g0value = (((ARR(_random_table, _tab_rows, 6, h0value, 0) * _random_factor[i])
+           ^ ARR(_random_table, _tab_rows, 6, h1value, 1)) % mi) + _offset[i];
+    g1value = (((ARR(_random_table, _tab_rows, 6, h0value, 2) * _random_factor[i])
+           ^ ARR(_random_table, _tab_rows, 6, h1value, 3)) % (mi - 1)) + _offset[i];
+    g2value = (((ARR(_random_table, _tab_rows, 6, h0value, 4) * _random_factor[i])
+           ^ ARR(_random_table, _tab_rows, 6, h1value, 5)) % (mi - 2)) + _offset[i];
+
+    //compute the values of the gij(x)
+    if(g1value >= g0value) {
+        g1value++;
+    }
+    if(g2value >= g0value) {
+        if(g2value >= g1value) {
+            g2value += 2;
+        } else {
+            g2value++;
+        }
+    } else if(g2value >= g1value) {
+        g1value++;
+    }
+
+    //now compute the real hash value
+    sum = (GETCHARBITPAIR(_g, g0Value) + GETCHARBITPAIR(_g, g1Value) + GETCHARBITPAIR(_g, g2Value)) % 3;
+
+    switch(sum) {
+        case 0:
+            return g0value;
+        case 1:
+            return g1value;
+        default: //value 2
+            return g2value;
+    }
+}
