@@ -13,8 +13,8 @@ private:
     // TODO smaller domains, stack instead of heap?, comments ignore arithmetic coding...
     // general parameters
     //ULLONG* _c;   // additional number of bits for 1-universal hash functions
-    short _k;   // universe U=({0,1}^k)^l, needed for split of input x (especially if there are leading zero)
-    short _l;   // needed for navigation in _h_split_coeffs
+    unsigned short _k;   // universe U=({0,1}^k)^l, needed for split of input x (especially if there are leading zero)
+    unsigned short _l;   // needed for navigation in _h_split_coeffs
     // general information
     ULLONG _m;   // number of buckets, needed for navigation in mi, _h_mod_mask, ...
     ULLONG* _offset; // [m+1] -> [m_0+m_1+m_2+...+m_(m-1)+1], offset of bucket i, offset[m] first position after buckets
@@ -33,7 +33,7 @@ private:
     // tables T^0_0, T^0_1, T^1_0, T^1_1, T^2_0, T^2_1
     // ordering: tables = columns, row-wise representation
     //_tab_rows = number of rows of each table
-    short _tab_width;       // = b = number of bits of each table entry (b = log(max ni) + c)
+    unsigned short _tab_width;       // = b = number of bits of each table entry (b = log(max ni) + c)
     ULLONG* _random_table;    // [6*_tab_rows] -> [2^(_tab_width)]
     ULLONG* _random_factor;   // si's, [m] (or [3*m]) -> [2^(_tab_width)]
     // selection arrays G_i where G_i: [m_i] -> [3], i in [m]
@@ -50,7 +50,7 @@ private:
     void _createRandomFactor(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 10.1
     void _computeGij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2, 11-12
     bool _isCyclic(ULLONG, ULLONG*, ULLONG); //step 13+_g, reset acyclicity_test_array to zero...
-    void _peelOf(ULLONG, ULLONG, ULLONG*, ULLONG, ULLONG*, ULLONG, ULLONG*, ULLONG*, ULLONG, ULLONG, char*);
+    void _peelOf(ULLONG, ULLONG, ULLONG*, ULLONG, ULLONG*, ULLONG&, ULLONG*, ULLONG*, ULLONG, ULLONG, unsigned char*);
     void _clear(); // delete data
 
 public:

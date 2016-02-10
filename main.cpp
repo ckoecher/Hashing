@@ -2,8 +2,8 @@
 #include "PerfectHashFunction.h"
 
 void testTypeSizes() {
-    cout << "\nBytes of char: " << sizeof(char) << endl;
-    assert(sizeof(char) == 1);
+    cout << "\nBytes of unsigned char: " << sizeof(unsigned char) << endl;
+    assert(sizeof(unsigned char) == 1);
     cout << "Bytes of ULLONG: " << sizeof(ULLONG) << endl;
     assert(sizeof(ULLONG) == 8);
     cout << "Bytes of double: " << sizeof(double) << ", long double: " << sizeof(long double) << endl;
@@ -27,9 +27,9 @@ void testMersenneTwister() {
 
 void testOldBitpairs() {
     cout << "\nTest of CHARBITPAIR:" << endl;
-    char* c = new char[16];
+    unsigned char* c = new unsigned char[16];
     cout << "\tchar array:";
-    for(char i = 0; i < 16; i++) {
+    for(unsigned char i = 0; i < 16; i++) {
         c[i] = i;
         cout << " " << i;
     }
@@ -44,10 +44,10 @@ void testOldBitpairs() {
     cout << "\nn = ";
     int n;
     clock_t cl;
-    char* ctest;
-    char cc;
+    unsigned char* ctest;
+    unsigned char cc;
     cin >> n;
-    ctest = new char[n];
+    ctest = new unsigned char[n];
     for(int i = 0; i < 4*n; i++) {
         cc = CHARBITPAIR3(ctest, i); // caching...
     }
@@ -80,15 +80,15 @@ void testOldBitpairs() {
         }
         cout << clock() - cl << " ticks" << endl;
     }
-    char* charArray;
-    cout << "new char[100]:";
-    charArray = new char[100];
+    unsigned char* charArray;
+    cout << "new unsigned char[100]:";
+    charArray = new unsigned char[100];
     for(int i = 0; i < 100; i++) {
         cout << " " << (int)charArray[i];
     }
     cout << "\nnew char[100]():";
     delete[] charArray;
-    charArray = new char[100]();
+    charArray = new unsigned char[100]();
     for(int i = 0; i < 100; i++) {
         cout << " " << (int)charArray[i];
     }
@@ -114,8 +114,8 @@ void testBitPairs() {
     cout << "\nNew BitPair implementation: carray[16]";
     int n = 16;
     clock_t cl;
-    char* carray = new char[n]();
-    char c;
+    unsigned char* carray = new unsigned char[n]();
+    unsigned char c;
     cout << "carray:";
     for(int i = 0; i < n; i++) {
         carray[i] = i;
@@ -130,7 +130,7 @@ void testBitPairs() {
     }
     cout << "\ngetBitPair content:";
     for(int i = 0; i < 2*n; i++) {
-        for(short j = 0; j < 2; j++) {
+        for(unsigned short j = 0; j < 2; j++) {
             cout << " " << (int)getBitPair(carray, j, i);
         }
         cout << " #";
@@ -168,7 +168,7 @@ void testBitPairs() {
     cout << "\nn = ";
     cin >> n;
     delete[] carray;
-    carray = new char[n];
+    carray = new unsigned char[n];
     for(int round = 0; round < 5; round++) {
         cout << "\nGETBITPAIR time to read: ";
         cl = clock();
@@ -208,18 +208,18 @@ Configuration readConfig() {
     }
 
     struct Configuration config;
-    config.k = (short) reader.GetInteger("Hashing", "k", 8);
-    config.l = (short) reader.GetInteger("Hashing", "l", 8);
+    config.k = (unsigned short) reader.GetInteger("Hashing", "k", 8);
+    config.l = (unsigned short) reader.GetInteger("Hashing", "l", 8);
     config.m_coeff = reader.GetReal("Hashing", "m_coeff", 2);
     config.m_exp = reader.GetReal("Hashing", "m_exp", 2/3);
-    config.additional_bits_uhf = (short) reader.GetInteger("Hashing", "additional_bits_uhf", 6);
+    config.additional_bits_uhf = (unsigned short) reader.GetInteger("Hashing", "additional_bits_uhf", 6);
     config.mi_coeff = reader.GetReal("Hashing", "mi_coeff", 1.25);
     config.tab_rows_coeff = reader.GetReal("Hashing", "tab_rows_coeff", 2);
     config.tab_rows_exp = reader.GetReal("Hashing", "tab_rows_exp", 0.75);
-    config.additional_bits_tab = (short) reader.GetInteger("Hashing", "additional_bits_tab", 6);
-    config.num_of_tries_random_tab = (short) reader.GetInteger("Hashing", "num_of_tries_random_tab", 42); //TODO which default value?
-    config.num_of_tries_random_si = (short) reader.GetInteger("Hashing", "num_of_tries_random_si", 42); //TODO which default value?
-    config.seed = (unsigned long) reader.GetInteger("Hashing", "seed", 123456); //TODO which default value?
+    config.additional_bits_tab = (unsigned short) reader.GetInteger("Hashing", "additional_bits_tab", 6);
+    config.num_of_tries_random_tab = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_random_tab", 42); //TODO which default value?
+    config.num_of_tries_random_si = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_random_si", 42); //TODO which default value?
+    config.seed = (ULLONG) reader.GetInteger("Hashing", "seed", 123456); //TODO which default value?
 
     return config;
 }

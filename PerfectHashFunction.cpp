@@ -160,23 +160,23 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
     bucket_offsets[_m] = bucket_offsets[_m-1]; // TODO = data_length
     // sort data
     splitted_data = new ULLONG[data_length];
-    for(int i = data_length-1; i >= 0; i--) {
+    for(ULLONG i = data_length-1; i >= 0; i--) {
         hv = _evalUhf(data[i], _h_split_coeffs, _h_split_mod_mask, _m);
         splitted_data[bucket_offsets[hv]-1] = data[i];
         bucket_offsets[hv]--;
     }
     bucket_data = new ULLONG*[_m]; // bucket_data[i] == S[i] TODO or _m+1? (should not be needed...)
     bucket_data[0] = splitted_data;
-    for(int i = 1; i < _m; i++) {
+    for(ULLONG i = 1; i < _m; i++) {
         bucket_data[i] = bucket_data[i-1] + bucket_sizes[i-1];
     }
     // TODO _tab_width here or in _createRandomTables?
-    _tab_width = (short)ceil(log2(*max_bucket_size))+(short)config.additional_bits_tab;
+    _tab_width = (unsigned short)ceil(log2(*max_bucket_size))+config.additional_bits_tab;
     // TODO assert(_tab_width <= 64);
     _offset = new ULLONG[_m+1];
     _offset[0] = 0;
     *max_mi = 0;
-    for(int i = 1; i < _m+1; i++) {
+    for(ULLONG i = 1; i < _m+1; i++) {
         mi_1 = (ULLONG) ceil(config.mi_coeff * bucket_sizes[i-1]);
         if(*max_mi < mi_1) {
             *max_mi = mi_1;
@@ -191,7 +191,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
 void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
     //TODO check this method!
-    char *hTables = new char[(_tab_rows>>1)+1](); // (2*_tab_rows)/4+1
+    unsigned char *hTables = new unsigned char[(_tab_rows>>1)+1](); // (2*_tab_rows)/4+1
     ULLONG *hashValues = new ULLONG[max_bucket_size<<1]; // 2*max_bucket_size
     ULLONG *h0coeffs = nullptr, *h1coeffs = nullptr;
     bool goodPair;
@@ -308,8 +308,8 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     ULLONG gValue, edge_index, u;
     ULLONG *queue = new ULLONG[bucket_size];
     ULLONG next_queue_index = 0;
-    char *removed = new char[(bucket_size >> 3) + 1]();
-    char *visited = new char[(mi >> 3) + 1]();
+    unsigned char *removed = new unsigned char[(bucket_size >> 3) + 1]();
+    unsigned char *visited = new unsigned char[(mi >> 3) + 1]();
     int c, sum;
 
     //construct a list of adjacent edges of each node
@@ -334,8 +334,8 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
         if(cEdgesOf[j] == 1) {
             edge_index = ARR(edgesOf, mi, max_length, j, 0);
             if(!GETBIT(removed, edge_index)) {
-                _peelOf(edge_index, j, acyclicity_test_array, bucket_size, &queue, &next_queue_index, &edgesOf,
-                       &cEdgesOf, max_length, mi, &removed); //TODO: we need to look at the correct pointers here again
+                _peelOf(edge_index, j, acyclicity_test_array, bucket_size, queue, next_queue_index, edgesOf,
+                       cEdgesOf, max_length, mi, removed);
             }
         }
     }
@@ -350,7 +350,7 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     }
 
     //now assign the values
-    for(ULLONG u = _offset[bucket_num]; u < _offset[bucket_num + 1]; u++) {
+    for(ULLONG u = _offset[bucket_num]; u < _offset[bucket_num + 1]; u++) { // TODO u umbenennen oder ohne ULLONG
         SETCHARBITPAIR(_g, u, 0);
     }
     for(ULLONG j = next_queue_index - 1; j >= 0; j--) {
@@ -377,8 +377,8 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
 }
 
 void PerfectHashFunction::_peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG *acyclicity_test_array,
-                                  ULLONG bucket_size, ULLONG *queue, ULLONG next_queue_index, ULLONG *edgesOf,
-                                  ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, char* removed) {
+                                  ULLONG bucket_size, ULLONG *queue, ULLONG &next_queue_index, ULLONG *edgesOf,
+                                  ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, unsigned char *removed) {
     // TODO check this method
     ULLONG gValue, next_edge;
 
@@ -403,8 +403,8 @@ void PerfectHashFunction::_peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG
             if(cEdgesOf[gValue] == 1) { //TODO: maybe we need to do this in a new loop
                 next_edge = ARR(edgesOf, mi, max_length, gValue, 0);
                 if(!GETBIT(removed, next_edge)) {
-                    _peelOf(next_edge, gValue, acyclicity_test_array, bucket_size, &queue, &next_queue_index, &edgesOf,
-                           &cEdgesOf, max_length, mi, &removed); //TODO: we need to look at the correct pointers here again
+                    _peelOf(next_edge, gValue, acyclicity_test_array, bucket_size, queue, next_queue_index, edgesOf,
+                           cEdgesOf, max_length, mi, removed);
                 }
             }
         }
