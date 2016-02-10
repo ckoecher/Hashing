@@ -3,6 +3,7 @@
 //
 
 #include "definitions.h"
+#include "PerfectHashFunction.h"
 
 PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_length, ULLONG *data) {
     ULLONG *splitted_data = nullptr; // => B in (2)
@@ -15,7 +16,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
 
     // RNG begin
     mt19937* rng = nullptr;
-    uniform_int_distribution<ULLONG>* dist_h_split_coeffs = nullptr, dist_h_coeffs = nullptr, dist_tables = nullptr;
+    uniform_int_distribution<ULLONG> *dist_h_split_coeffs = nullptr, *dist_h_coeffs = nullptr, *dist_tables = nullptr;
     // RNG end
 
     _configure(config, data_length);
@@ -45,7 +46,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
 
     _random_table = new ULLONG[6*_tab_rows];
     _random_factor = new ULLONG[_m]; // TODO 3*_m for factors s_(i,j)
-    _g = new char[(_offset[_m] >> 2) + 1]();
+    _g = new unsigned char[(_offset[_m] >> 2) + 1]();
     do {
         _createRandomTables(rng, dist_tables);
         badTables = false;
@@ -102,7 +103,7 @@ void PerfectHashFunction::_createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_d
     }
 }
 
-ULLONG _evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, ULLONG modulus) {
+ULLONG PerfectHashFunction::_evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, ULLONG modulus) {
     // TODO check this method!
     // & modMask == Mod (modMask+1) = Mod 2^l
     // modMask < 2^64
@@ -190,9 +191,9 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
 void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
     //TODO check this method!
-    char* hTables = new char[(_tab_rows>>1)+1](); // (2*_tab_rows)/4+1
-    ULLONG* hashValues = new ULLONG[max_bucket_size<<1]; // 2*max_bucket_size
-    ULLONG* h0coeffs = nullptr, h1coeffs = nullptr;
+    char *hTables = new char[(_tab_rows>>1)+1](); // (2*_tab_rows)/4+1
+    ULLONG *hashValues = new ULLONG[max_bucket_size<<1]; // 2*max_bucket_size
+    ULLONG *h0coeffs = nullptr, *h1coeffs = nullptr;
     bool goodPair;
     ULLONG x;
 
@@ -206,24 +207,24 @@ void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_
             _createUhf(h0coeffs, rng, dist);
             _createUhf(h1coeffs, rng, dist);
             // counting
-            for(ULLONG j = 0; j < bucket_sizes[i]; j++) {
+            for(ULLONG j = 0; j < bucket_sizes[pairI]; j++) {
                 // compute hashvalues
                 x = bucket_data[pairI][j];
-                ARR(hashValues, bucket_sizes[i], 2, j, 0) = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_width);
-                ARR(hashValues, bucket_sizes[i], 2, j, 1) = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_width);
+                ARR(hashValues, bucket_sizes[pairI], 2, j, 0) = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_width);
+                ARR(hashValues, bucket_sizes[pairI], 2, j, 1) = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_width);
                 // count hashvalues
-                if(GETBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) < 2) {
-                    INCBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0));
+                if(GETBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[pairI], 2, j, 0)) < 2) {
+                    INCBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[pairI], 2, j, 0));
                 }
-                if(GETBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) < 2) {
-                    INCBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1));
+                if(GETBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[pairI], 2, j, 1)) < 2) {
+                    INCBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[pairI], 2, j, 1));
                 }
             }
             // evaluation
-            for(ULLONG j = 0; j < bucket_sizes[i] && goodPair; j++) {
+            for(ULLONG j = 0; j < bucket_sizes[pairI] && goodPair; j++) {
                 // TODO &&
-                if (GETBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0)) == 2) {
-                    if (GETBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1)) == 2) {
+                if (GETBITPAIR(hTables, 0, ARR(hashValues, bucket_sizes[pairI], 2, j, 0)) == 2) {
+                    if (GETBITPAIR(hTables, 1, ARR(hashValues, bucket_sizes[pairI], 2, j, 1)) == 2) {
                         // pair not good
                         goodPair = false;
                     }
@@ -232,9 +233,9 @@ void PerfectHashFunction::_createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_
             // clear hTables for counting
             // TODO without condition?
             if(pairI < _m-1 || !goodPair) {
-                for(ULLONG j = 0; j < bucket_sizes[i]; j++) {
-                    ZEROBITPAIRS(hTables, 0, ARR(hashValues, bucket_sizes[i], 2, j, 0));
-                    ZEROBITPAIRS(hTables, 1, ARR(hashValues, bucket_sizes[i], 2, j, 1));
+                for(ULLONG j = 0; j < bucket_sizes[pairI]; j++) {
+                    ZEROBITPAIRS(hTables, 0, ARR(hashValues, bucket_sizes[pairI], 2, j, 0));
+                    ZEROBITPAIRS(hTables, 1, ARR(hashValues, bucket_sizes[pairI], 2, j, 1));
                 }
             }
         } while(!goodPair);
@@ -333,8 +334,8 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
         if(cEdgesOf[j] == 1) {
             edge_index = ARR(edgesOf, mi, max_length, j, 0);
             if(!GETBIT(removed, edge_index)) {
-                peelOf(edge_index, j, acyclicity_test_array, bucket_size, &queue, &next_queue_index, &edgesOf,
-                       &cEdgesOf, max_length, mi, &removed);
+                _peelOf(edge_index, j, acyclicity_test_array, bucket_size, &queue, &next_queue_index, &edgesOf,
+                       &cEdgesOf, max_length, mi, &removed); //TODO: we need to look at the correct pointers here again
             }
         }
     }
@@ -355,7 +356,7 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     for(ULLONG j = next_queue_index - 1; j >= 0; j--) {
         sum = 0;
         for(int k = 2; k >= 0; k--) {
-            gValue = ARR(acyclicity_test_array, bucket_size, 3, l, k);
+            gValue = ARR(acyclicity_test_array, bucket_size, 3, queue[j], k);
             if(!GETBIT(visited, gValue)) {
                 u = gValue;
                 SETBIT(visited, gValue, 1);
@@ -375,8 +376,9 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     return false;
 }
 
-void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_test_array, ULLONG bucket_size, ULLONG* queue,
-            ULLONG next_queue_index, ULLONG *edgesOf, ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, char* removed) {
+void PerfectHashFunction::_peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG *acyclicity_test_array,
+                                  ULLONG bucket_size, ULLONG *queue, ULLONG next_queue_index, ULLONG *edgesOf,
+                                  ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, char* removed) {
     // TODO check this method
     ULLONG gValue, next_edge;
 
@@ -387,7 +389,7 @@ void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_test_arra
 
     //remove the edge from all incident nodes
     for(int k = 0; k < 3; k++) {
-        gValue = ARR(acyclicity_test_array, bucket_size, 3, j, k);
+        gValue = ARR(acyclicity_test_array, bucket_size, 3, edge_index, k);
         if(gValue != vertex_index) {
             for(ULLONG l = 0; l < cEdgesOf[gValue]; l++) {
                 if(ARR(edgesOf, mi, max_length, gValue, l) == edge_index) {
@@ -401,8 +403,8 @@ void peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG* acyclicity_test_arra
             if(cEdgesOf[gValue] == 1) { //TODO: maybe we need to do this in a new loop
                 next_edge = ARR(edgesOf, mi, max_length, gValue, 0);
                 if(!GETBIT(removed, next_edge)) {
-                    peelOf(next_edge, gValue, acyclicity_test_array, bucket_size, &queue, &next_queue_index, &edgesOf,
-                           &cEdgesOf, max_length, mi, &removed);
+                    _peelOf(next_edge, gValue, acyclicity_test_array, bucket_size, &queue, &next_queue_index, &edgesOf,
+                           &cEdgesOf, max_length, mi, &removed); //TODO: we need to look at the correct pointers here again
                 }
             }
         }
@@ -449,7 +451,7 @@ ULLONG PerfectHashFunction::evaluate(ULLONG x) {
     }
 
     //now compute the real hash value
-    sum = (GETCHARBITPAIR(_g, g0Value) + GETCHARBITPAIR(_g, g1Value) + GETCHARBITPAIR(_g, g2Value)) % 3;
+    sum = (GETCHARBITPAIR(_g, g0value) + GETCHARBITPAIR(_g, g1value) + GETCHARBITPAIR(_g, g2value)) % 3;
 
     switch(sum) {
         case 0:
