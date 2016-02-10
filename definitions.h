@@ -7,6 +7,7 @@
 #include <climits>      // ULLONG_MAX
 #include <string>       // string, stoull (to unsigned long long), stod (to double)
 #include <random>       // Mersenne twister mt19937
+#include "./inih/cpp/INIReader.h"
 //#include <functional>   // bind
 #include <assert.h>
 #include <ctime> // clock_t

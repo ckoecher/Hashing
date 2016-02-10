@@ -199,11 +199,37 @@ void readData(char* filename, ULLONG* data, ULLONG* data_length) {
     // reads one set of data
 }
 
+Configuration readConfig() {
+    INIReader reader("/home/chris/CLionProjects/Hashing/config.ini"); //TODO this path should be changed!!!
+
+    if (reader.ParseError() < 0) {
+        cout << "Can't load 'config.ini'\n" << reader.ParseError();
+        throw 0; //TODO throw an exception here!
+    }
+
+    struct Configuration config;
+    config.k = (short) reader.GetInteger("Hashing", "k", 8);
+    config.l = (short) reader.GetInteger("Hashing", "l", 8);
+    config.m_coeff = reader.GetReal("Hashing", "m_coeff", 2);
+    config.m_exp = reader.GetReal("Hashing", "m_exp", 2/3);
+    config.additional_bits_uhf = (short) reader.GetInteger("Hashing", "additional_bits_uhf", 6);
+    config.mi_coeff = reader.GetReal("Hashing", "mi_coeff", 1.25);
+    config.tab_rows_coeff = reader.GetReal("Hashing", "tab_rows_coeff", 2);
+    config.tab_rows_exp = reader.GetReal("Hashing", "tab_rows_exp", 0.75);
+    config.additional_bits_tab = (short) reader.GetInteger("Hashing", "additional_bits_tab", 6);
+    config.num_of_tries_random_tab = (short) reader.GetInteger("Hashing", "num_of_tries_random_tab", 42); //TODO which default value?
+    config.num_of_tries_random_si = (short) reader.GetInteger("Hashing", "num_of_tries_random_si", 42); //TODO which default value?
+    config.seed = (unsigned long) reader.GetInteger("Hashing", "seed", 123456); //TODO which default value?
+
+    return config;
+}
+
 int main() {
-    testBitPairs();
+    readConfig();
+/*    testBitPairs();
     testTypeSizes();
     testMersenneTwister();
-    testOldBitpairs();
+    testOldBitpairs();*/
 
     return 0;
 }
