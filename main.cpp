@@ -86,7 +86,7 @@ void testOldBitpairs() {
     for(int i = 0; i < 100; i++) {
         cout << " " << (int)charArray[i];
     }
-    cout << "\nnew char[100]():";
+    cout << "\nnew unsigned char[100]():";
     delete[] charArray;
     charArray = new unsigned char[100]();
     for(int i = 0; i < 100; i++) {
@@ -201,6 +201,7 @@ void readData(char* filename, ULLONG* data, ULLONG* data_length) {
 
 Configuration readConfig() {
     INIReader reader("/home/chris/CLionProjects/Hashing/config.ini"); //TODO this path should be changed!!!
+    //INIReader reader("/home/philipp/ClionProjects/Hashing/config.ini");
 
     if (reader.ParseError() < 0) {
         cout << "Can't load 'config.ini'\n" << reader.ParseError();
@@ -211,7 +212,7 @@ Configuration readConfig() {
     config.k = (unsigned short) reader.GetInteger("Hashing", "k", 8);
     config.l = (unsigned short) reader.GetInteger("Hashing", "l", 8);
     config.m_coeff = reader.GetReal("Hashing", "m_coeff", 2);
-    config.m_exp = reader.GetReal("Hashing", "m_exp", 2/3);
+    config.m_exp = reader.GetReal("Hashing", "m_exp", 2.0/3);
     config.additional_bits_uhf = (unsigned short) reader.GetInteger("Hashing", "additional_bits_uhf", 6);
     config.mi_coeff = reader.GetReal("Hashing", "mi_coeff", 1.25);
     config.tab_rows_coeff = reader.GetReal("Hashing", "tab_rows_coeff", 2);
@@ -225,11 +226,18 @@ Configuration readConfig() {
 }
 
 int main() {
-    readConfig();
 /*    testBitPairs();
     testTypeSizes();
     testMersenneTwister();
     testOldBitpairs();*/
+
+    Configuration config = readConfig();
+    ULLONG data_length = 10;
+    ULLONG* data = new ULLONG[data_length];
+    for(ULLONG i = 0; i < data_length; i++) {
+        data[i] = i;
+    }
+    PerfectHashFunction* phf = new PerfectHashFunction(config, data_length, data);
 
     return 0;
 }
