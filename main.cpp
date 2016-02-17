@@ -1,4 +1,5 @@
 #include "definitions.h"
+#include "InputData.h"
 #include "PerfectHashFunction.h"
 
 void testTypeSizes() {
@@ -209,8 +210,8 @@ Configuration readConfig() {
     }
 
     struct Configuration config;
-    config.k = (unsigned short) reader.GetInteger("Hashing", "k", 8);
-    config.l = (unsigned short) reader.GetInteger("Hashing", "l", 8);
+    config.k = (unsigned short) reader.GetInteger("Hashing", "k", 32);
+    config.l = (unsigned short) reader.GetInteger("Hashing", "l", 2);
     config.m_coeff = reader.GetReal("Hashing", "m_coeff", 2);
     config.m_exp = reader.GetReal("Hashing", "m_exp", 2.0/3);
     config.additional_bits_uhf = (unsigned short) reader.GetInteger("Hashing", "additional_bits_uhf", 6);
@@ -232,12 +233,28 @@ int main() {
     testOldBitpairs();*/
 
     Configuration config = readConfig();
-    ULLONG data_length = 10;
+/*    ULLONG data_length = 10;
     ULLONG* data = new ULLONG[data_length];
     for(ULLONG i = 0; i < data_length; i++) {
         data[i] = i;
+    }*/
+
+    InputData *data = new InputData("/home/chris/test.txt");
+/*    InputData *output = new InputData("/home/chris/test2.txt");
+    ULLONG value;
+    cout << data->getLength();
+    cout << "\n";
+    for(ULLONG i = 0; i < data->getLength(); i++) {
+        value = data->getValue(i);
+        output->setValue(value, i);
+
+        cout << value;
+        cout << "\n";
     }
-    PerfectHashFunction* phf = new PerfectHashFunction(config, data_length, data);
+    input->close();
+    output->close();
+    exit(0);*/
+    PerfectHashFunction* phf = new PerfectHashFunction(config, data);
 
     return 0;
 }

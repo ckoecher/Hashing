@@ -5,7 +5,7 @@
 #include "definitions.h"
 #include "PerfectHashFunction.h"
 
-PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_length, ULLONG *data) {
+PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) {
     // TODO check this implementation
     ULLONG *splitted_data = nullptr; // => B in (2)
     ULLONG **bucket_data = nullptr; //= new ULLONG*[_m] => S[i] in (7) // TODO only needs normal delete[] because of splitted_data (!?)
@@ -20,7 +20,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
     uniform_int_distribution<ULLONG> *dist_h_split_coeffs = nullptr, *dist_h_coeffs = nullptr, *dist_tables = nullptr;
     // RNG end
 
-    _configure(config, data_length);
+    _configure(config, data->getLength());
 
     // RNG begin
     rng = new mt19937(config.seed);
@@ -30,7 +30,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, ULLONG data_lengt
     _h_split_coeffs = new ULLONG[_l+1];
     do {
         _createUhf(_h_split_coeffs, rng, dist_h_split_coeffs); //step 3
-    } while(!_split(config, data_length, data, splitted_data, bucket_data, bucket_sizes, &max_bucket_size, &max_mi));
+    } while(!_split(config, data, splitted_data, bucket_data, bucket_sizes, &max_bucket_size, &max_mi));
     // TODO assert(ceil(log(max_mi)) <= 64)
 
     // Debug
@@ -132,19 +132,21 @@ ULLONG PerfectHashFunction::_evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, 
     return res;
 }
 
-bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLONG* data, ULLONG* &splitted_data, ULLONG **&bucket_data, ULLONG *&bucket_sizes,
-                                 ULLONG *max_bucket_size, ULLONG *max_mi) {
+bool PerfectHashFunction::_split(Configuration config, InputData *data, ULLONG* &splitted_data,
+                                 ULLONG **&bucket_data, ULLONG *&bucket_sizes, ULLONG *max_bucket_size, ULLONG *max_mi) {
 //    ULLONG **bucket_data; //= new ULLONG*[_m] // == B in concept
 //    ULLONG *bucket_sizes; //= Array of ni's // <= diffs of C in concept
 //    ULLONG max_bucket_size, max_mi;
 
     // initialization and instantiation
     // ULLONG* splitted_data; // == B // external for better deallocation
+    ULLONG data_length = data->getLength(); // = n
     ULLONG* bucket_offsets = nullptr; // == C[i]
     bucket_sizes = new ULLONG[_m](); // == n_i; initialized to zero because of ()
     ULLONG hv; // hash value by h_split
     ULLONG mi_1; // for computation of max_mi and _offset
     ULLONG bucketOverflowSize = (ULLONG)floor(sqrt(data_length)); // data_length >= 2^53 => maybe not exact result
+    ULLONG value; // temporary value from data stream
 
     // Debug
     cout << "bucket_sizes[i]:";
@@ -160,7 +162,7 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
 
     // counting
     for(ULLONG i = 0; i < data_length; i++) {
-        hv = _evalUhf(data[i], _h_split_coeffs, _h_split_mod_mask, _m); // TODO save for usage in "sort data"?
+        hv = _evalUhf(data->getValue(i), _h_split_coeffs, _h_split_mod_mask, _m); // TODO save for usage in "sort data"?
         // Debug
         cout << " " << hv;
         // Debug end
@@ -207,8 +209,9 @@ bool PerfectHashFunction::_split(Configuration config, ULLONG data_length, ULLON
     // sort data
     splitted_data = new ULLONG[data_length];
     for(ULLONG i = data_length-1; i < data_length; i--) { // condition: not i >= 0 because of UNSIGNED
-        hv = _evalUhf(data[i], _h_split_coeffs, _h_split_mod_mask, _m);
-        splitted_data[bucket_offsets[hv]-1] = data[i];
+        value = data->getValue(i);
+        hv = _evalUhf(value, _h_split_coeffs, _h_split_mod_mask, _m);
+        splitted_data[bucket_offsets[hv]-1] = value;
         bucket_offsets[hv]--;
     }
     bucket_data = new ULLONG*[_m]; // bucket_data[i] == S[i] TODO or _m+1? (should not be needed...)
