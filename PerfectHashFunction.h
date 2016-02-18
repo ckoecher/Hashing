@@ -45,13 +45,13 @@ private:
     void _configure(Configuration config, ULLONG data_length); //step 1 + bit masks
     void _createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 2
     ULLONG _evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, ULLONG modulus);
-    bool _split(Configuration config, InputData *data, ULLONG* &splitted_data,
-                ULLONG **&bucket_data, ULLONG *&bucket_sizes, ULLONG *max_bucket_size, ULLONG *max_mi); //steps 4-7 + _tab_width
-    void _createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, ULLONG max_bucket_size, mt19937* rng,
+    bool _split(Configuration config, InputData *data, InputData *bucket_data,
+                ULLONG *&bucket_offsets, ULLONG *max_bucket_size, ULLONG *max_mi); //steps 4-7 + _tab_width
+    void _createGoodPairs(InputData *bucket_data, ULLONG *bucket_offsets, ULLONG max_bucket_size, mt19937* rng,
                           uniform_int_distribution<ULLONG>* dist); //step 8
     void _createRandomTables(mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 9
     void _createRandomFactor(ULLONG bucket_num, mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 10.1
-    void _computeGij(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size, ULLONG *bucket); //step 10.2, 11-12
+    void _computeGij(ULLONG bucket_num, ULLONG *acyclicity_test_array, InputData *bucket_data, ULLONG bucket_offset, ULLONG bucket_size); //step 10.2, 11-12
     bool _isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size); //step 13+_g, reset acyclicity_test_array to zero...
     void _peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG *acyclicity_test_array,
                  ULLONG bucket_size, ULLONG *queue, ULLONG &next_queue_index, ULLONG *edgesOf,
