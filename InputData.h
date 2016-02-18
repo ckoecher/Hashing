@@ -17,6 +17,7 @@ public:
     InputData(std::string fileName);
     InputData(); //construct a temporary file
     void setValue(ULLONG value, ULLONG position);
+    void setNextValue(ULLONG value);
     ULLONG getValue(ULLONG position);
     ULLONG getNextValue();
     ULLONG getLength();

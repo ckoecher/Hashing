@@ -42,6 +42,19 @@ void InputData::setValue(ULLONG value, ULLONG position) {
     _stream.write(str, _size);
 }
 
+void InputData::setNextValue(ULLONG value) {
+    char str[_size];
+
+    //convert the data
+    for(int i = _size - 1; i >= 0; i--) {
+        str[i] = (char) value & 255;
+        value >>= 8;
+    }
+
+    //write the data
+    _stream.write(str, _size);
+}
+
 ULLONG InputData::getValue(ULLONG position) {
     ULLONG value = 0;
     char str[_size];

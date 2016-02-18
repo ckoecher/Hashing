@@ -191,6 +191,41 @@ void testBitPairs() {
     delete[] carray;
 }
 
+void testInputData() {
+    //InputData *input = new InputData("/home/chris/test.txt");
+    //InputData *output = new InputData("/home/chris/test2.txt");
+    InputData *input = new InputData("/home/philipp/test.txt");
+    InputData *output = new InputData("/home/philipp/test2.txt");
+    ULLONG value;
+    cout << input->getLength();
+    cout << "\n";
+    for(ULLONG i = 0; i < input->getLength(); i++) {
+        value = input->getValue(i);
+        output->setValue(value, i);
+
+        cout << value;
+        cout << "\n";
+    }
+    input->close();
+    output->close();
+    delete input;
+    delete output;
+}
+
+void testCreateInputData() {
+    cout << "\nCreate Input Data" << endl;
+    cout << "n = ";
+    ULLONG n;
+    cin >> n;
+    //InputData *data = new InputData("/home/chris/test.txt");
+    InputData *data = new InputData("/home/philipp/test.txt");
+    for(ULLONG i = 0; i < n; i++) {
+        data->setNextValue(i);
+    }
+    data->close();
+    delete data;
+}
+
 void readConfigs(char* filename, Configuration* configs, ULLONG* numOfConfigs) {
     // reads configuration data from "filename"
     // numOfConfigs configurations -> configs = new Configuration[numOfConfigs]
@@ -201,8 +236,8 @@ void readData(char* filename, ULLONG* data, ULLONG* data_length) {
 }
 
 Configuration readConfig() {
-    INIReader reader("/home/chris/CLionProjects/Hashing/config.ini"); //TODO this path should be changed!!!
-    //INIReader reader("/home/philipp/ClionProjects/Hashing/config.ini");
+    //INIReader reader("/home/chris/CLionProjects/Hashing/config.ini"); //TODO this path should be changed!!!
+    INIReader reader("/home/philipp/ClionProjects/Hashing/config.ini");
 
     if (reader.ParseError() < 0) {
         cout << "Can't load 'config.ini'\n" << reader.ParseError();
@@ -239,22 +274,16 @@ int main() {
         data[i] = i;
     }*/
 
-    InputData *data = new InputData("/home/chris/test.txt");
-/*    InputData *output = new InputData("/home/chris/test2.txt");
-    ULLONG value;
-    cout << data->getLength();
-    cout << "\n";
-    for(ULLONG i = 0; i < data->getLength(); i++) {
-        value = data->getValue(i);
-        output->setValue(value, i);
+/*    testInputData();
+    testCreateInputData();*/
+    //InputData *data = new InputData("/home/chris/test.txt");
+    InputData *data = new InputData("/home/philipp/test.txt");
 
-        cout << value;
-        cout << "\n";
-    }
-    input->close();
-    output->close();
-    exit(0);*/
     PerfectHashFunction* phf = new PerfectHashFunction(config, data);
+
+    data->close();
+    delete data;
+    delete phf;
 
     return 0;
 }

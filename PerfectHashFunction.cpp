@@ -15,6 +15,14 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     bool badTables, badFactor;
     short num_of_tries_tab = 0, num_of_tries_si;
 
+    // Debug
+    cout << "data[i]:";
+    for(ULLONG i = 0; i < data->getLength(); i++) {
+        cout << " " << data->getValue(i);
+    }
+    cout << endl;
+    // Debug end
+
     // RNG begin
     mt19937* rng = nullptr;
     uniform_int_distribution<ULLONG> *dist_h_split_coeffs = nullptr, *dist_h_coeffs = nullptr, *dist_tables = nullptr;
