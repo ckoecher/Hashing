@@ -42,16 +42,20 @@ private:
     // G_i[j] = _g[offset[i]+j]
     unsigned char* _g;       // [offset[m]] -> [3]; 8 bit <-> 4 values
 
-    void _configure(Configuration, ULLONG); //step 1 + bit masks
-    void _createUhf(ULLONG*, mt19937*, uniform_int_distribution<ULLONG>*); //step 2
-    ULLONG _evalUhf(ULLONG, ULLONG*, ULLONG, ULLONG);
-    bool _split(Configuration, InputData*, ULLONG*&, ULLONG**&, ULLONG*&, ULLONG*, ULLONG*); //steps 4-7 + _tab_width
-    void _createGoodPairs(ULLONG**, ULLONG*, ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 8
-    void _createRandomTables(mt19937*, uniform_int_distribution<ULLONG>*); //step 9
-    void _createRandomFactor(ULLONG, mt19937*, uniform_int_distribution<ULLONG>*); //step 10.1
-    void _computeGij(ULLONG, ULLONG*, ULLONG, ULLONG*); //step 10.2, 11-12
-    bool _isCyclic(ULLONG, ULLONG*, ULLONG); //step 13+_g, reset acyclicity_test_array to zero...
-    void _peelOf(ULLONG, ULLONG, ULLONG*, ULLONG, ULLONG*, ULLONG&, ULLONG*, ULLONG*, ULLONG, ULLONG, unsigned char*);
+    void _configure(Configuration config, ULLONG data_length); //step 1 + bit masks
+    void _createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 2
+    ULLONG _evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, ULLONG modulus);
+    bool _split(Configuration config, InputData *data, ULLONG* &splitted_data,
+                ULLONG **&bucket_data, ULLONG *&bucket_sizes, ULLONG *max_bucket_size, ULLONG *max_mi); //steps 4-7 + _tab_width
+    void _createGoodPairs(ULLONG **bucket_data, ULLONG *bucket_sizes, ULLONG max_bucket_size, mt19937* rng,
+                          uniform_int_distribution<ULLONG>* dist); //step 8
+    void _createRandomTables(mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 9
+    void _createRandomFactor(ULLONG bucket_num, mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 10.1
+    void _computeGij(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size, ULLONG *bucket); //step 10.2, 11-12
+    bool _isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size); //step 13+_g, reset acyclicity_test_array to zero...
+    void _peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG *acyclicity_test_array,
+                 ULLONG bucket_size, ULLONG *queue, ULLONG &next_queue_index, ULLONG *edgesOf,
+                 ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, unsigned char *removed);
     void _clear(); // delete data
 
 public:
