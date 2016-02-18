@@ -15,6 +15,8 @@ InputData::InputData(string fileName) {
     //fetch the data length
     _stream.seekg(0, fstream::end);
     _length = (ULLONG) _stream.tellg() / _size;
+
+    _stream.seekg(0);
 }
 
 InputData::InputData() {
