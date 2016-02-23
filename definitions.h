@@ -38,8 +38,8 @@ inline unsigned char getBitPair(unsigned char* array, unsigned short tab, ULLONG
 #define CHARBITPAIR2(array, index) (array[index >> 2] >> 2*(3 - (index % 4))) % 4
 
 // gets and sets a single bit in an array of chars (used as bitmaps)
-#define GETBIT(array, index) (array[index >> 3]) >> (index & 7) & 1
-#define SETBIT(array, index, value) array[index >> 3] ^= (-value ^ array[index >> 3]) & (1 << (index & 7))
+#define GETBIT(array, index) (((array[index >> 3]) >> (index & 7)) & 1)
+#define SETBIT(array, index, value) (array[index >> 3] ^= (-value ^ array[index >> 3]) & (1 << (index & 7)))
 
 // gets and sets two bits in an array of chars (used as bitmap)
 #define GETCHARBITPAIR(array, index) (array[index >> 2]) >> ((index & 3) << 1) & 3

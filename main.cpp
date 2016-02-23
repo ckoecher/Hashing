@@ -244,6 +244,31 @@ void testCreateRandomInputData() {
     delete dist;
 }
 
+void testSetGetBit() {
+    cout << "\nTest SETBIT and GETBIT" << endl;
+    unsigned char *array = new unsigned char[2]();
+//#define GETBIT(array, index) ((array[index >> 3]) >> (index & 7)) & 1
+//#define SETBIT(array, index, value) array[index >> 3] ^= (-value ^ array[index >> 3]) & (1 << (index & 7))
+    for(int i = 0; i < 2*sizeof(unsigned char)*8; i++) {
+        cout << GETBIT(array, i) << " ";
+    }
+    cout << endl;
+    for(int j = 0; j < 2*sizeof(unsigned char)*8; j++) {
+        SETBIT(array, j, 1);
+        for(int i = 0; i < 2*sizeof(unsigned char)*8; i++) {
+            cout << GETBIT(array, i) << " ";
+        }
+        cout << endl;
+    }
+    for(int j = 0; j < 2*sizeof(unsigned char)*8; j++) {
+        SETBIT(array, j, 0);
+        for(int i = 0; i < 2*sizeof(unsigned char)*8; i++) {
+            cout << GETBIT(array, i) << " ";
+        }
+        cout << endl;
+    }
+}
+
 void readConfigs(char* filename, Configuration* configs, ULLONG* numOfConfigs) {
     // reads configuration data from "filename"
     // numOfConfigs configurations -> configs = new Configuration[numOfConfigs]
@@ -279,11 +304,43 @@ Configuration readConfig() {
     return config;
 }
 
+void testPerfectHashFunction(PerfectHashFunction *phf, InputData *data) {
+    cout << "\nTest Perfect Hashfunction" << endl;
+    ULLONG datalength = data->getLength();
+    ULLONG range = phf->getRange();
+    ULLONG key;
+    ULLONG hashvalue;
+    ULLONG i;
+    unsigned char* testarray = new unsigned char[(range>>3)+1]();
+    bool perfect = true;
+    for(i = 0; i < data->getLength(); i++) {
+        key = data->getValue(i);
+        hashvalue = phf->evaluate(key);
+        // Debug
+        if(hashvalue == 874821) {
+            cout << "data no. " << i << ": key " << key << ", hashvalue " << hashvalue << endl;
+        }
+        // Debug end
+        if(GETBIT(testarray, hashvalue)) {
+            perfect = false;
+            break;
+        }
+        SETBIT(testarray, hashvalue, 1);
+    }
+    if(perfect) {
+        cout << "SUCCESSFUL :-)" << endl;
+    } else {
+        cout << "UNSUCCESSFUL :-(" << endl;
+        cout << "data no. " << i << ": key " << key << ", hashvalue " << hashvalue << endl;
+    }
+}
+
 int main() {
 /*    testBitPairs();
     testTypeSizes();
     testMersenneTwister();
-    testOldBitpairs();*/
+    testOldBitpairs();
+    testSetGetBit();*/
 
     Configuration config = readConfig();
 /*    ULLONG data_length = 10;
@@ -294,15 +351,20 @@ int main() {
 
 
     // TODO n = 16 => "terminate called after throwing an instance of 'int'" after createGoodPairs
-    // TODO exists bucket with >= 2 elements that is acyclic (by function)?
     // TODO n = 5000 => bucket 0 no good pair of hash functions
-/*    testInputData();/**/
-    testCreateInputData();/*
+
+    // TODO with testCreateRandomInputData, n = 1000000
+    // hashvalue(data no. 229) == hashvalue(data no. 1326)
+
+/*    testInputData();/*
+    testCreateInputData();/**/
     testCreateRandomInputData();/**/
     //InputData *data = new InputData("/home/chris/test.txt");
     InputData *data = new InputData("/home/philipp/test.txt");
 
     PerfectHashFunction* phf = new PerfectHashFunction(config, data);
+
+    testPerfectHashFunction(phf, data);
 
     data->close();
     delete data;

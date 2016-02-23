@@ -65,6 +65,7 @@ public:
     PerfectHashFunction(Configuration config, InputData *data);
     // TODO int instead of ULLONG? only one bit/one number needed to express "not found": ULLONG_MAX?
     ULLONG evaluate(ULLONG x);
+    ULLONG getRange();
 };
 
 #endif //HASHING_PERFECTHASHFUNCTION_H
