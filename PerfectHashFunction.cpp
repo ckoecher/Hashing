@@ -101,8 +101,6 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     cout << "### after createGoodPairs ###" << endl;
     // Debug end
 
-    // TODO debug following code
-
     // RNG begin
     dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG)pow(2.0l, _tab_width)-1);
     // RNG end
@@ -112,12 +110,22 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     _random_table = new ULLONG[6*_tab_rows];
     _random_factor = new ULLONG[_m]; // TODO 3*_m for factors s_(i,j)
     _g = new unsigned char[(_offset[_m] >> 2) + 1]();
+
+    // TODO debug following code
+
     do {
+        // Debug
+        cout << "### new random tables ###" << endl;
+        // Debug end
+
         _createRandomTables(rng, dist_tables);
         badTables = false;
         num_of_tries_tab++;
 
         for(ULLONG i = 0; i < _m; i++) {
+            // Debug
+            cout << "# bucket " << i << " #" << endl;
+            // Debug end
             num_of_tries_si = 0;
             do {
                 _createRandomFactor(i, rng, dist_tables);
@@ -146,6 +154,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     delete dist_tables;
 
     if(badTables) {
+        // Debug
+        cout << "could not create good tables within " << config.num_of_tries_random_tab << " tries" << endl;
+        // Debug end
         // construction not successful
         _clear();
         //TODO throw an exception!!!!
@@ -290,6 +301,10 @@ bool PerfectHashFunction::_split(Configuration config, InputData *data, InputDat
     *max_mi = 0;
     for(ULLONG i = 1; i < _m+1; i++) {
         mi_1 = (ULLONG) ceil(config.mi_coeff * bucket_sizes[i-1]);
+        // TODO maybe not necessary (to eliminate problem with %(mi-2))
+        if(mi_1 > 0 && mi_1 < 3) {
+            mi_1 = 3;
+        }
         if(*max_mi < mi_1) {
             *max_mi = mi_1;
         }
@@ -368,6 +383,12 @@ void PerfectHashFunction::_createGoodPairs(InputData *bucket_data, ULLONG *bucke
                     ZEROBITPAIRS(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1));
                 }
             }
+
+            // Debug
+            if(!goodPair) {
+                cout << "rerun" << endl;
+            }
+            // Debug end
         } while(!goodPair);
 
         // Debug
@@ -406,24 +427,36 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 
         //compute the values of the fij(x)
         fi0 = ((ARR(_random_table, _tab_rows, 6, h0value, 0) * _random_factor[bucket_num])
-               ^ ARR(_random_table, _tab_rows, 6, h1value, 1)) % mi;
+               ^ (ARR(_random_table, _tab_rows, 6, h1value, 1))) % mi;
         fi1 = ((ARR(_random_table, _tab_rows, 6, h0value, 2) * _random_factor[bucket_num])
-               ^ ARR(_random_table, _tab_rows, 6, h1value, 3)) % (mi - 1);
+               ^ (ARR(_random_table, _tab_rows, 6, h1value, 3))) % (mi - 1);
         fi2 = ((ARR(_random_table, _tab_rows, 6, h0value, 4) * _random_factor[bucket_num])
-               ^ ARR(_random_table, _tab_rows, 6, h1value, 5)) % (mi - 2);
+               ^ (ARR(_random_table, _tab_rows, 6, h1value, 5))) % (mi - 2);
 
         //compute the values of the gij(x)
         if(fi1 >= fi0) {
             fi1++;
         }
+//        if(fi2 >= fi0) {
+//            if(fi2 >= fi1) {
+//                fi2 += 2;
+//            } else {
+//                fi2++;
+//            }
+//        } else if(fi2 >= fi1) {
+//            fi2++;
+//        }
+        // first version not equivalent / not correct
         if(fi2 >= fi0) {
+            fi2++;
             if(fi2 >= fi1) {
-                fi2 += 2;
-            } else {
                 fi2++;
             }
         } else if(fi2 >= fi1) {
             fi2++;
+            if(fi2 >= fi0) {
+                fi2++;
+            }
         }
 
         //save the values in the array
@@ -436,7 +469,7 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
     //TODO check this method!
     // TODO new for queue, removed and visited after first loop?
-    ULLONG max_length = 2*log2(bucket_size); // TODO <<1 ??? (after cast?)
+    ULLONG max_length = 2*ceil(log2(bucket_size))+1; // TODO <<1 ??? (after cast?)
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
     ULLONG *edgesOf = new ULLONG[max_length * mi]();
     ULLONG *cEdgesOf = new ULLONG[mi]();
@@ -447,13 +480,26 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     unsigned char *visited = new unsigned char[(mi >> 3) + 1]();
     int c, sum;
 
+//    // Debug
+//    cout << "Check new 3-graph with " << bucket_size << " edges and "
+//         << _offset[bucket_num+1]-_offset[bucket_num] << " nodes" << endl;
+//    cout << "list of edges:" << endl;
+//    for(ULLONG ii = 0; ii < bucket_size; ii++) {
+//        cout << "\t";
+//        for(ULLONG jj = 0; jj < 3; jj++) {
+//            cout << ARR(acyclicity_test_array, bucket_offsets[i+1]-bucket_offsets[i], 3, ii, jj) << " ";
+//        }
+//        cout << endl;
+//    }
+//    // Debug end
+
     //construct a list of adjacent edges of each node
     for(ULLONG j = 0; j < bucket_size; j++) {
         for(int k = 0; k < 3; k++) {
             gValue = ARR(acyclicity_test_array, bucket_size, 3, j, k);
-            ARR(edgesOf, mi, max_length, gValue, cEdgesOf[gValue]) = j;
-            cEdgesOf[gValue]++;
-            if(cEdgesOf[gValue] == max_length) { //an overflow here
+            if(cEdgesOf[gValue] >= max_length) { //an overflow here
+                cout << "node " << gValue << " has more than " << max_length << " edges" << endl;
+                cout << "creation not successful" << endl;
                 delete[] edgesOf;
                 delete[] cEdgesOf;
                 delete[] queue;
@@ -461,8 +507,21 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
                 delete[] visited;
                 return true; //TODO is this right?
             }
+            ARR(edgesOf, mi, max_length, gValue, cEdgesOf[gValue]) = j;
+            cEdgesOf[gValue]++;
         }
     }
+
+//    // Debug
+//    cout << "list of adjacent edges:" << endl;
+//    for(ULLONG nodeindex = 0; nodeindex < mi; nodeindex++) {
+//        cout << "\tnode " << nodeindex << " with " << cEdgesOf[nodeindex] << " edges:";
+//        for(int edgeindex = 0; edgeindex < cEdgesOf[nodeindex]; edgeindex++) {
+//            cout << " " << ARR(edgesOf, mi, max_length, nodeindex, edgeindex);
+//        }
+//        cout << endl;
+//    }
+//    // Debug end
 
     //now check for acyclicity
     for(ULLONG j = 0; j < mi; j++) {
@@ -476,6 +535,9 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     }
 
     if(next_queue_index != bucket_size) {
+        // Debug
+        cout << "bucket " << bucket_num << ": not acyclic" << endl;
+        // Debug end
         delete[] edgesOf;
         delete[] cEdgesOf;
         delete[] queue;
@@ -483,6 +545,20 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
         delete[] visited;
         return true;
     }
+
+    // Debug
+    cout << "bucket " << bucket_num << ": acyclic" << endl;
+    // Debug end
+//    // Debug
+//    cout << "list of adjacent edges:" << endl;
+//    for(ULLONG nodeindex = 0; nodeindex < mi; nodeindex++) {
+//        cout << "\tnode " << nodeindex << " with " << cEdgesOf[nodeindex] << " edges:";
+//        for(int edgeindex = 0; edgeindex < cEdgesOf[nodeindex]; edgeindex++) {
+//            cout << " " << ARR(edgesOf, mi, max_length, nodeindex, edgeindex);
+//        }
+//        cout << endl;
+//    }
+//    // Debug end
 
     //now assign the values
     for(ULLONG u = _offset[bucket_num]; u < _offset[bucket_num + 1]; u++) { // TODO u umbenennen oder ohne ULLONG
@@ -565,24 +641,36 @@ ULLONG PerfectHashFunction::evaluate(ULLONG x) {
     //compute the values of fij(x)
     //consider that we're adding the offset here as we need this later multiple times
     g0value = (((ARR(_random_table, _tab_rows, 6, h0value, 0) * _random_factor[i])
-           ^ ARR(_random_table, _tab_rows, 6, h1value, 1)) % mi) + _offset[i];
+           ^ (ARR(_random_table, _tab_rows, 6, h1value, 1))) % mi) + _offset[i];
     g1value = (((ARR(_random_table, _tab_rows, 6, h0value, 2) * _random_factor[i])
-           ^ ARR(_random_table, _tab_rows, 6, h1value, 3)) % (mi - 1)) + _offset[i];
+           ^ (ARR(_random_table, _tab_rows, 6, h1value, 3))) % (mi - 1)) + _offset[i];
     g2value = (((ARR(_random_table, _tab_rows, 6, h0value, 4) * _random_factor[i])
-           ^ ARR(_random_table, _tab_rows, 6, h1value, 5)) % (mi - 2)) + _offset[i];
+           ^ (ARR(_random_table, _tab_rows, 6, h1value, 5))) % (mi - 2)) + _offset[i];
 
     //compute the values of the gij(x)
     if(g1value >= g0value) {
         g1value++;
     }
+//    if(g2value >= g0value) {
+//        if(g2value >= g1value) {
+//            g2value += 2;
+//        } else {
+//            g2value++;
+//        }
+//    } else if(g2value >= g1value) {
+//        g1value++;
+//    }
+    // first version not equivalent / not correct
     if(g2value >= g0value) {
+        g2value++;
         if(g2value >= g1value) {
-            g2value += 2;
-        } else {
             g2value++;
         }
     } else if(g2value >= g1value) {
-        g1value++;
+        g2value++;
+        if(g2value >= g0value) {
+            g2value++;
+        }
     }
 
     //now compute the real hash value

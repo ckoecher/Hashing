@@ -226,6 +226,24 @@ void testCreateInputData() {
     delete data;
 }
 
+void testCreateRandomInputData() {
+    cout << "\nCreate Random Input Data" << endl;
+    cout << "n = ";
+    ULLONG n;
+    cin >> n;
+    //InputData *data = new InputData("/home/chris/test.txt");
+    InputData *data = new InputData("/home/philipp/test.txt");
+    mt19937 *rng = new mt19937(1);
+    uniform_int_distribution<ULLONG> *dist = new uniform_int_distribution<ULLONG>;
+    for(ULLONG i = 0; i < n; i++) {
+        data->setNextValue((*dist)(*rng));
+    }
+    data->close();
+    delete data;
+    delete rng;
+    delete dist;
+}
+
 void readConfigs(char* filename, Configuration* configs, ULLONG* numOfConfigs) {
     // reads configuration data from "filename"
     // numOfConfigs configurations -> configs = new Configuration[numOfConfigs]
@@ -276,8 +294,11 @@ int main() {
 
 
     // TODO n = 16 => "terminate called after throwing an instance of 'int'" after createGoodPairs
-/*    testInputData();/*
-    testCreateInputData();/**/
+    // TODO exists bucket with >= 2 elements that is acyclic (by function)?
+    // TODO n = 5000 => bucket 0 no good pair of hash functions
+/*    testInputData();/**/
+    testCreateInputData();/*
+    testCreateRandomInputData();/**/
     //InputData *data = new InputData("/home/chris/test.txt");
     InputData *data = new InputData("/home/philipp/test.txt");
 
