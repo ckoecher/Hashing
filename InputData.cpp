@@ -65,10 +65,10 @@ ULLONG InputData::getValue(ULLONG position) {
 
     //convert the data
     for(int i = 0; i < _size - 1; i++) {
-        value |= (ULLONG) str[i];
+        value |= (ULLONG) (unsigned char) str[i];
         value <<= 8;
     }
-    value |= (ULLONG) str[_size - 1];
+    value |= (ULLONG) (unsigned char) str[_size - 1];
 
     return value;
 }
@@ -82,10 +82,10 @@ ULLONG InputData::getNextValue() {
 
     //convert the data
     for(int i = 0; i < _size - 1; i++) {
-        value |= (ULLONG) str[i];
+        value |= (ULLONG) (unsigned char) str[i];
         value <<= 8;
     }
-    value |= (ULLONG) str[_size - 1];
+    value |= (ULLONG) (unsigned char) str[_size - 1];
 
     return value;
 }

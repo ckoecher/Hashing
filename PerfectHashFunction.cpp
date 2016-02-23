@@ -18,6 +18,10 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     short num_of_tries_tab = 0, num_of_tries_si;
 
     // Debug
+    cout << "### Perfect Hash Function Creation ###" << endl;
+    // Debug end
+
+    // Debug
     cout << "data[i]:";
     for(ULLONG i = 0; i < data->getLength(); i++) {
         cout << " " << data->getValue(i);
@@ -75,9 +79,29 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     cout << "### before createGoodPairs ###" << endl;
     // Debug end
 
-    // TODO debug following code
-
     _createGoodPairs(bucket_data, bucket_offsets, max_bucket_size, rng, dist_h_coeffs);
+
+    // Debug
+    cout << "### \"testing\" good pairs ###" << endl;
+    cout << "bucket i: (h_0^i(x), h_1^i(x)) (h_0^i(y), h_1^i(y)) ..." << endl;
+    for(ULLONG i = 0; i < _m; i++) {
+        cout << "bucket " << i << ":";
+        ULLONG *h0coeffs = _h_coeffs + ((i * (_l + 1)) << 1);
+        ULLONG *h1coeffs = h0coeffs + _l + 1;
+        for(int j = 0; j < bucket_offsets[i+1] - bucket_offsets[i]; j++) {
+            cout << " (" << _evalUhf(bucket_data->getValue(bucket_offsets[i]+j), h0coeffs, _h_mod_mask, _tab_width)
+                 << ", " << _evalUhf(bucket_data->getValue(bucket_offsets[i]+j), h1coeffs, _h_mod_mask, _tab_width)
+                 << ")";
+        }
+        cout << endl;
+    }
+    // Debug end
+
+    // Debug
+    cout << "### after createGoodPairs ###" << endl;
+    // Debug end
+
+    // TODO debug following code
 
     // RNG begin
     dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG)pow(2.0l, _tab_width)-1);
@@ -197,6 +221,15 @@ bool PerfectHashFunction::_split(Configuration config, InputData *data, InputDat
         // Debug end
         if(bucket_sizes[hv] >= bucketOverflowSize) {
             // bucket i overflow (too large)
+
+            // Debug
+            cout << "_split not possible with _h_split_coeffs";
+            for(ULLONG jj = 0; jj < _l+1; jj++) {
+                cout << " " << _h_split_coeffs[jj];
+            }
+            cout << endl;
+            // Debug end
+
             delete[] bucket_sizes;
             return false;
         } else {
@@ -272,12 +305,12 @@ bool PerfectHashFunction::_split(Configuration config, InputData *data, InputDat
     // Debug end
 
     // deallocate
-    delete[] bucket_offsets;
+    delete[] bucket_sizes;
     return true;
 }
 
 void PerfectHashFunction::_createGoodPairs(InputData *bucket_data, ULLONG *bucket_offsets, ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
-    //TODO check this method!
+    // TODO debug following code (if necessary)
     unsigned char *hTables = new unsigned char[(_tab_rows>>1)+1](); // (2*_tab_rows)/4+1
     ULLONG *hashValues = new ULLONG[max_bucket_size<<1]; // 2*max_bucket_size
     ULLONG *h0coeffs = nullptr, *h1coeffs = nullptr;
@@ -286,12 +319,19 @@ void PerfectHashFunction::_createGoodPairs(InputData *bucket_data, ULLONG *bucke
 
     _h_coeffs = new ULLONG[(_m*(_l+1))<<1]; // 2*_m*(_l+1)
     for(ULLONG pairI = 0; pairI < _m; pairI++) {
+
+        // Debug
+        cout << "create good pair " << pairI << endl;
+        // Debug end
+
         // TODO Makro?
         h0coeffs = _h_coeffs + ((pairI * (_l + 1))<<1); // _h_coeffs + 2 * pairI * (_l + 1)
         h1coeffs = h0coeffs + _l + 1;
-        goodPair = true;
+        // goodPair = true;
         bucket_size = bucket_offsets[pairI+1]-bucket_offsets[pairI];
         do {
+            goodPair = true;
+
             _createUhf(h0coeffs, rng, dist);
             _createUhf(h1coeffs, rng, dist);
             // counting
@@ -329,6 +369,10 @@ void PerfectHashFunction::_createGoodPairs(InputData *bucket_data, ULLONG *bucke
                 }
             }
         } while(!goodPair);
+
+        // Debug
+        cout << "good pair " << pairI << " created" << endl;
+        // Debug end
     }
     delete[] hTables;
     delete[] hashValues;

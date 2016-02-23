@@ -274,8 +274,10 @@ int main() {
         data[i] = i;
     }*/
 
-/*    testInputData();
-    testCreateInputData();*/
+
+    // TODO n = 16 => "terminate called after throwing an instance of 'int'" after createGoodPairs
+/*    testInputData();/*
+    testCreateInputData();/**/
     //InputData *data = new InputData("/home/chris/test.txt");
     InputData *data = new InputData("/home/philipp/test.txt");
 
