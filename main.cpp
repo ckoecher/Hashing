@@ -269,6 +269,33 @@ void testSetGetBit() {
     }
 }
 
+void testSetGetCharBitPairs() {
+//#define GETCHARBITPAIR(array, index) ((array[index >> 2]) >> ((index & 3) << 1) & 3)
+//#define SETCHARBITPAIR(array, index, value) (array[index >> 2] ^= (-value ^ array[index >> 2]) & (3 << ((index & 3) << 1)))
+    cout << "\nTest SETCHARBITPAIR and GETCHARBITPAIR" << endl;
+    unsigned char *array = new unsigned char[1]();
+    for(int i = 0; i < 4; i++) {
+        cout << " " << GETCHARBITPAIR(array, i);
+    }
+    cout << endl;
+    for(int j = 0; j < 4; j++) {
+        for(int k = 1; k < 4; k++) {
+            SETCHARBITPAIR(array, j, k);
+            for(int i = 0; i < 4; i++) {
+                cout << " " << GETCHARBITPAIR(array, i);
+            }
+            cout << endl;
+        }
+    }
+    for(int j = 0; j < 4; j++) {
+        SETCHARBITPAIR(array, j, 0);
+        for(int i = 0; i < 4; i++) {
+            cout << " " << GETCHARBITPAIR(array, i);
+        }
+        cout << endl;
+    }
+}
+
 void readConfigs(char* filename, Configuration* configs, ULLONG* numOfConfigs) {
     // reads configuration data from "filename"
     // numOfConfigs configurations -> configs = new Configuration[numOfConfigs]
@@ -316,11 +343,6 @@ void testPerfectHashFunction(PerfectHashFunction *phf, InputData *data) {
     for(i = 0; i < data->getLength(); i++) {
         key = data->getValue(i);
         hashvalue = phf->evaluate(key);
-        // Debug
-        if(hashvalue == 874821) {
-            cout << "data no. " << i << ": key " << key << ", hashvalue " << hashvalue << endl;
-        }
-        // Debug end
         if(GETBIT(testarray, hashvalue)) {
             perfect = false;
             break;
@@ -340,7 +362,8 @@ int main() {
     testTypeSizes();
     testMersenneTwister();
     testOldBitpairs();
-    testSetGetBit();*/
+    testSetGetBit();
+    testSetGetCharBitPairs();*/
 
     Configuration config = readConfig();
 /*    ULLONG data_length = 10;

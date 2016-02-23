@@ -589,6 +589,15 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     for(ULLONG u = _offset[bucket_num]; u < _offset[bucket_num + 1]; u++) { // TODO u umbenennen oder ohne ULLONG
         SETCHARBITPAIR(_g, u, 0);
     }
+
+//    // Debug
+//    cout << "g values for bucket " << bucket_num << " zeroed:" << endl;
+//    for(ULLONG ii = _offset[bucket_num]; ii < _offset[bucket_num + 1]; ii++) {
+//        cout << " " << GETCHARBITPAIR(_g, ii);
+//    }
+//    cout << endl;
+//    // Debug end
+
     for(ULLONG j = next_queue_index - 1; j < next_queue_index; j--) {
         sum = 0;
         for(int k = 2; k >= 0; k--) {
@@ -601,8 +610,17 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
                 sum += GETCHARBITPAIR(_g, _offset[bucket_num] + gValue);
             }
         }
-        SETCHARBITPAIR(_g, _offset[bucket_num] + u, (c - sum) % 3);
+        //SETCHARBITPAIR(_g, _offset[bucket_num] + u, (c - sum) % 3);
+        SETCHARBITPAIR(_g, _offset[bucket_num] + u, (3 + c - (sum % 3)) % 3);
     }
+
+//    // Debug
+//    cout << "g values for bucket " << bucket_num << ":" << endl;
+//    for(ULLONG ii = _offset[bucket_num]; ii < _offset[bucket_num + 1]; ii++) {
+//        cout << " " << GETCHARBITPAIR(_g, ii);
+//    }
+//    cout << endl;
+//    // Debug end
 
     delete[] edgesOf;
     delete[] cEdgesOf;

@@ -18,32 +18,33 @@ typedef unsigned long long int ULLONG;
 
 #define ARR(array, rows, cols, row, col) array[row*cols+col]
 
-// array of type char*
-#define GETBITPAIR(array, tab, index) (array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4
+// array of type unsigned char*
+#define GETBITPAIR(array, tab, index) ((array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4)
 inline unsigned char getBitPair(unsigned char* array, unsigned short tab, ULLONG index) {
     return (array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) & 3;
 }
-#define INCBITPAIR(array, tab, index) array[index >> 1] = array[index >> 1] + (1 << ((1-tab)<<1) << ((1-(index&1))<<2))
-#define ZEROBITPAIRS(array, tab, index) array[index >> 1] = 0
+#define INCBITPAIR(array, tab, index) (array[index >> 1] = array[index >> 1] + (1 << ((1-tab)<<1) << ((1-(index&1))<<2)))
+#define ZEROBITPAIRS(array, tab, index) (array[index >> 1] = 0)
 // TODO ATTENTION: does not only reset array_tab[index] to zero BUT complete char array element!
 
 // NOT USABLE
-#define CHARBITPAIR(array, index) (array[index >> 2] >> 2*(3 - (index & 3))) % 4
-#define CHARBITPAIRTABS(array, tab, index) (unsigned char)(array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4
+#define CHARBITPAIR(array, index) ((array[index >> 2] >> 2*(3 - (index & 3))) % 4)
+#define CHARBITPAIRTABS(array, tab, index) ((unsigned char)(array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4)
 // last % 4 not replaceable by & 3 ???
 // CHARBITPAIRTABS fastest solution
 
 // slower...
-#define CHARBITPAIR3(array, index) (array[index/4] >> 2*(3 - (index % 4))) % 4
-#define CHARBITPAIR2(array, index) (array[index >> 2] >> 2*(3 - (index % 4))) % 4
+#define CHARBITPAIR3(array, index) ((array[index/4] >> 2*(3 - (index % 4))) % 4)
+#define CHARBITPAIR2(array, index) ((array[index >> 2] >> 2*(3 - (index % 4))) % 4)
 
 // gets and sets a single bit in an array of chars (used as bitmaps)
 #define GETBIT(array, index) (((array[index >> 3]) >> (index & 7)) & 1)
 #define SETBIT(array, index, value) (array[index >> 3] ^= (-value ^ array[index >> 3]) & (1 << (index & 7)))
 
 // gets and sets two bits in an array of chars (used as bitmap)
-#define GETCHARBITPAIR(array, index) (array[index >> 2]) >> ((index & 3) << 1) & 3
-#define SETCHARBITPAIR(array, index, value) array[index >> 2] ^= (-value ^ array[index >> 2]) & (3 << ((index & 3) << 1))
+#define GETCHARBITPAIR(array, index) ((array[index >> 2]) >> ((index & 3) << 1) & 3)
+//#define SETCHARBITPAIR(array, index, value) (array[index >> 2] ^= (-value ^ array[index >> 2]) & (3 << ((index & 3) << 1)))
+#define SETCHARBITPAIR(array, index, value) (array[index>>2] = array[index>>2] & (255-(3<<((index&3)<<1))) | (value<<((index&3)<<1)))
 
 struct Configuration {
     unsigned short k; // U = [(2^k)^l], k*l(<)=64, k>=1, l>=1
