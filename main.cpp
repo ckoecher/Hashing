@@ -1,7 +1,7 @@
 #include "definitions.h"
 #include "InputData.h"
 #include "PerfectHashFunction.h"
-#include <typeinfo>
+
 void testTypeSizes() {
     cout << "\nBytes of unsigned char: " << sizeof(unsigned char) << endl;
     assert(sizeof(unsigned char) == 1);
