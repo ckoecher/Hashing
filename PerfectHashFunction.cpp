@@ -18,15 +18,15 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     short num_of_tries_tab = 0, num_of_tries_si;
 
     // Debug
-    cout << "### Perfect Hash Function Creation ###" << endl;
-    // Debug end
+    if(config.debug_mode) {
+        cout << "### Perfect Hash Function Creation ###" << endl;
 
-    // Debug
-    cout << "data[i]:";
-    for(ULLONG i = 0; i < data->getLength(); i++) {
-        cout << " " << data->getValue(i);
+        cout << "data[i]:";
+        for(ULLONG i = 0; i < data->getLength(); i++) {
+            cout << " " << data->getValue(i);
+        }
+        cout << endl;
     }
-    cout << endl;
     // Debug end
 
     // RNG begin
@@ -48,7 +48,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     // TODO assert(ceil(log(max_mi)) <= 64)
 
     // Debug
-    cout << _m << " buckets with <= " << max_bucket_size << " elements" << endl;
+    if(_debug_mode) {
+        cout << _m << " buckets with <= " << max_bucket_size << " elements" << endl;
+    }
     // Debug end
 
 //    // Debug
@@ -80,7 +82,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     // RNG end
 
     // Debug
-    cout << "### before createGoodPairs ###" << endl;
+    if(_debug_mode) {
+        cout << "### before createGoodPairs ###" << endl;
+    }
     // Debug end
 
     _createGoodPairs(bucket_data, bucket_offsets, max_bucket_size, rng, dist_h_coeffs);
@@ -102,7 +106,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
 //    // Debug end
 
     // Debug
-    cout << "### after createGoodPairs ###" << endl;
+    if(_debug_mode) {
+        cout << "### after createGoodPairs ###" << endl;
+    }
     // Debug end
 
     // RNG begin
@@ -119,7 +125,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
 
     do {
         // Debug
-        cout << "### new random tables ###" << endl;
+        if(_debug_mode) {
+            cout << "### new random tables ###" << endl;
+        }
         // Debug end
 
         _createRandomTables(rng, dist_tables);
@@ -162,7 +170,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
 
     if(badTables) {
         // Debug
-        cout << "could not create good tables within " << config.num_of_tries_random_tab << " tries" << endl;
+        if(_debug_mode) {
+            cout << "could not create good tables within " << config.num_of_tries_random_tab << " tries" << endl;
+        }
         // Debug end
         // construction not successful
         _clear();
@@ -171,7 +181,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration config, InputData *data) 
     }
 
     // Debug
-    cout << "### Perfect Hash Function Creation Successful ###" << endl;
+    if(_debug_mode) {
+        cout << "### Perfect Hash Function Creation Successful ###" << endl;
+    }
     // Debug end
 }
 
@@ -182,6 +194,7 @@ void PerfectHashFunction::_configure(Configuration config, ULLONG data_length) {
     _h_split_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_m)) + config.additional_bits_uhf)-1;
     _tab_rows = (ULLONG)ceil(config.tab_rows_coeff * pow(data_length, config.tab_rows_exp));
     _h_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
+    _debug_mode = config.debug_mode;
 }
 
 void PerfectHashFunction::_createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
@@ -224,11 +237,13 @@ bool PerfectHashFunction::_split(Configuration config, InputData *data, InputDat
     ULLONG value; // temporary value from data stream
 
     // Debug
-    cout << "bucket_sizes[i]:";
-    for(ULLONG i = 0; i < _m; i++) {
-        cout << " " << bucket_sizes[i];
+    if(_debug_mode) {
+        cout << "bucket_sizes[i]:";
+        for(ULLONG i = 0; i < _m; i++) {
+            cout << " " << bucket_sizes[i];
+        }
+        cout << endl;
     }
-    cout << endl;
     // Debug end
 
 //    // Debug
@@ -263,11 +278,13 @@ bool PerfectHashFunction::_split(Configuration config, InputData *data, InputDat
 //    // Debug end
 
     // Debug
-    cout << "bucket_sizes[i]:";
-    for(ULLONG i = 0; i < _m; i++) {
-        cout << " " << bucket_sizes[i];
+    if(_debug_mode) {
+        cout << "bucket_sizes[i]:";
+        for(ULLONG i = 0; i < _m; i++) {
+            cout << " " << bucket_sizes[i];
+        }
+        cout << endl;
     }
-    cout << endl;
     // Debug end
 
     // compute max. bucket size and offsets (for next segments) for sorted data (bucket_data segments)
@@ -283,11 +300,13 @@ bool PerfectHashFunction::_split(Configuration config, InputData *data, InputDat
     bucket_offsets[_m] = bucket_offsets[_m-1]; // TODO = data_length
 
     // Debug
-    cout << "bucket_offsets[i]:";
-    for(ULLONG i = 0; i < _m+1; i++) {
-        cout << " " << bucket_offsets[i];
+    if(_debug_mode) {
+        cout << "bucket_offsets[i]:";
+        for(ULLONG i = 0; i < _m+1; i++) {
+            cout << " " << bucket_offsets[i];
+        }
+        cout << endl;
     }
-    cout << endl;
     // Debug end
 
     // sort data
@@ -323,11 +342,13 @@ bool PerfectHashFunction::_split(Configuration config, InputData *data, InputDat
     }
 
     // Debug
-    cout << "_offset[i]:";
-    for(ULLONG i = 0; i < _m+1; i++) {
-        cout << " " << _offset[i];
+    if(_debug_mode) {
+        cout << "_offset[i]:";
+        for(ULLONG i = 0; i < _m+1; i++) {
+            cout << " " << _offset[i];
+        }
+        cout << endl;
     }
-    cout << endl;
     // Debug end
 
     // deallocate
@@ -357,7 +378,9 @@ void PerfectHashFunction::_createGoodPairs(InputData *bucket_data, ULLONG *bucke
         bucket_size = bucket_offsets[pairI+1]-bucket_offsets[pairI];
 
         // Debug
-        cout << "need to assign " << bucket_size << " elements to " << _tab_rows << " different values" << endl;
+        if(_debug_mode) {
+            cout << "need to assign " << bucket_size << " elements to " << _tab_rows << " different values" << endl;
+        }
         // Debug end
 
         do {
@@ -561,7 +584,9 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
 
     if(next_queue_index != bucket_size) {
         // Debug
-        cout << "bucket " << bucket_num << ": not acyclic" << endl;
+        if(_debug_mode) {
+            cout << "bucket " << bucket_num << ": not acyclic" << endl;
+        }
         // Debug end
         delete[] edgesOf;
         delete[] cEdgesOf;
@@ -572,7 +597,9 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     }
 
     // Debug
-    cout << "bucket " << bucket_num << ": acyclic" << endl;
+    if(_debug_mode) {
+        cout << "bucket " << bucket_num << ": acyclic" << endl;
+    }
     // Debug end
 //    // Debug
 //    cout << "list of adjacent edges:" << endl;

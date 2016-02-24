@@ -60,6 +60,7 @@ struct Configuration {
     unsigned short num_of_tries_random_si;
     //bool multiple_seeds; // use just one or more seeds for randomization of Mersenne Twister
     mt19937::result_type seed; // mt19937::result_type = unsigned long (= uint_fast32_t?)
+    bool debug_mode; //enable or disable debugger output
 };
 
 //std::mt19937 generator (123);

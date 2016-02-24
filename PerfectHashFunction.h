@@ -41,6 +41,7 @@ private:
     // ordering: G_0[0], G_0[1], G_0[2], ..., G_0[m_0-1], G_1[0], G_1[1], ..., G_(m-1)[m_(m-1)-1]
     // G_i[j] = _g[offset[i]+j]
     unsigned char* _g;       // [offset[m]] -> [3]; 8 bit <-> 4 values
+    bool _debug_mode;       // indicates whether to output debug notes or not
 
     void _configure(Configuration config, ULLONG data_length); //step 1 + bit masks
     void _createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 2

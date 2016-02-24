@@ -231,8 +231,8 @@ void testCreateRandomInputData() {
     cout << "n = ";
     ULLONG n;
     cin >> n;
-    //InputData *data = new InputData("/home/chris/test.txt");
-    InputData *data = new InputData("/home/philipp/test.txt");
+    InputData *data = new InputData("/home/chris/test.txt");
+    //InputData *data = new InputData("/home/philipp/test.txt");
     mt19937 *rng = new mt19937(1);
     uniform_int_distribution<ULLONG> *dist = new uniform_int_distribution<ULLONG>;
     for(ULLONG i = 0; i < n; i++) {
@@ -306,8 +306,8 @@ void readData(char* filename, ULLONG* data, ULLONG* data_length) {
 }
 
 Configuration readConfig() {
-    //INIReader reader("/home/chris/CLionProjects/Hashing/config.ini"); //TODO this path should be changed!!!
-    INIReader reader("/home/philipp/ClionProjects/Hashing/config.ini");
+    INIReader reader("/home/chris/CLionProjects/Hashing/config.ini"); //TODO this path should be changed!!!
+    //INIReader reader("/home/philipp/ClionProjects/Hashing/config.ini");
 
     if (reader.ParseError() < 0) {
         cout << "Can't load 'config.ini'\n" << reader.ParseError();
@@ -327,6 +327,7 @@ Configuration readConfig() {
     config.num_of_tries_random_tab = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_random_tab", 42); //TODO which default value?
     config.num_of_tries_random_si = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_random_si", 42); //TODO which default value?
     config.seed = (ULLONG) reader.GetInteger("Hashing", "seed", 123456); //TODO which default value?
+    config.debug_mode = reader.GetBoolean("Hashing", "debug_mode", true);
 
     return config;
 }
@@ -382,8 +383,8 @@ int main() {
 /*    testInputData();/*
     testCreateInputData();/**/
     testCreateRandomInputData();/**/
-    //InputData *data = new InputData("/home/chris/test.txt");
-    InputData *data = new InputData("/home/philipp/test.txt");
+    InputData *data = new InputData("/home/chris/test.txt");
+    //InputData *data = new InputData("/home/philipp/test.txt");
 
     PerfectHashFunction* phf = new PerfectHashFunction(config, data);
 
