@@ -1,7 +1,7 @@
 #include "definitions.h"
 #include "InputData.h"
 #include "PerfectHashFunction.h"
-
+#include <typeinfo>
 void testTypeSizes() {
     cout << "\nBytes of unsigned char: " << sizeof(unsigned char) << endl;
     assert(sizeof(unsigned char) == 1);
@@ -217,8 +217,8 @@ void testCreateInputData() {
     cout << "n = ";
     ULLONG n;
     cin >> n;
-    //InputData *data = new InputData("/home/chris/test.txt");
-    InputData *data = new InputData("/home/philipp/test.txt");
+    //InputData *data = new InputData("/home/chris/test.txt", ios::trunc);
+    InputData *data = new InputData("/home/philipp/test.txt", ios::trunc);
     for(ULLONG i = 0; i < n; i++) {
         data->setNextValue(i);
     }
@@ -231,8 +231,8 @@ void testCreateRandomInputData() {
     cout << "n = ";
     ULLONG n;
     cin >> n;
-    InputData *data = new InputData("/home/chris/test.txt");
-    //InputData *data = new InputData("/home/philipp/test.txt");
+    InputData *data = new InputData("/home/chris/test.txt", ios::trunc);
+    //InputData *data = new InputData("/home/philipp/test.txt", ios::trunc);
     mt19937 *rng = new mt19937(1);
     uniform_int_distribution<ULLONG> *dist = new uniform_int_distribution<ULLONG>;
     for(ULLONG i = 0; i < n; i++) {

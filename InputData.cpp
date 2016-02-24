@@ -8,8 +8,8 @@
 
 using namespace std;
 
-InputData::InputData(string fileName) {
-    _stream.open(fileName, fstream::in | fstream::out);
+InputData::InputData(string fileName, ios::openmode flags) {
+    _stream.open(fileName, flags | fstream::in | fstream::out);
     _size = sizeof(ULLONG);
 
     //fetch the data length
@@ -19,13 +19,13 @@ InputData::InputData(string fileName) {
     _stream.seekg(0);
 }
 
-InputData::InputData() {
+InputData::InputData(ios::openmode flags) {
     _size = sizeof(ULLONG);
     _length = 0;
 
     char *tmpName = strdup("/tmp/tmpfileXXXXXX");
     mkstemp(tmpName);
-    _stream.open(tmpName, fstream::in | fstream::out);
+    _stream.open(tmpName, flags | fstream::in | fstream::out);
 }
 
 void InputData::setValue(ULLONG value, ULLONG position) {
