@@ -52,6 +52,8 @@ struct Configuration {
     double m_coeff; // m = ceil(m_coeff * n^(m_exp))
     double m_exp;
     unsigned short additional_bits_uhf; // for 1-universal hash function
+    unsigned short num_of_tries_split;
+    unsigned short num_of_tries_goodpairs;
     double mi_coeff; // mi = ceil(c * ni)
     double tab_rows_coeff; // rows of tables T_i^j = tab_rows_coeff * n^(tab_rows_exp)
     double tab_rows_exp;
@@ -61,6 +63,56 @@ struct Configuration {
     //bool multiple_seeds; // use just one or more seeds for randomization of Mersenne Twister
     mt19937::result_type seed; // mt19937::result_type = unsigned long (= uint_fast32_t?)
     bool debug_mode; //enable or disable debugger output
+};
+
+struct Statistics {
+    // TODO ..._time without IO?
+    // TODO split = split_io + split_work?
+
+    ULLONG clocks_per_sec = CLOCKS_PER_SEC;
+    ULLONG num_of_keys = 0;
+    ULLONG range_of_phf = 0;
+    ULLONG size_in_bytes = 0;
+
+    clock_t creation_start = 0;
+    clock_t creation_end = 0;
+    clock_t creation_time = 0;
+    bool creation_success = false;
+
+    clock_t setup_start = 0;
+    clock_t setup_end = 0;
+    clock_t setup_time = 0;
+    bool setup_succuess = false;
+
+    clock_t split_start = 0;
+    clock_t split_end = 0;
+    clock_t split_time = 0;
+    unsigned short split_tries = 0;
+    bool split_success = false;
+
+    ULLONG num_of_buckets = 0;
+    ULLONG max_bucket_size = 0;
+    ULLONG min_bucket_size = 0;
+    long double avg_bucket_size = 0.0;
+
+    clock_t goodpairs_start = 0;
+    clock_t goodpairs_end = 0;
+    clock_t goodpairs_time = 0;
+    ULLONG goodpairs_total_tries = 0;
+    bool goodpairs_success = false;
+
+    clock_t buckets_start = 0;
+    clock_t buckets_end = 0;
+    clock_t buckets_time = 0;
+    unsigned short random_tab_tries = 0;
+    ULLONG random_si_total_tries = 0;
+    bool buckets_success = false;
+
+    clock_t eval_start = 0;
+    clock_t eval_end = 0;
+    clock_t eval_time = 0;
+    long double avg_eval_time = 0.0;
+    bool eval_success = false;
 };
 
 //std::mt19937 generator (123);

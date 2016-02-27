@@ -231,8 +231,8 @@ void testCreateRandomInputData() {
     cout << "n = ";
     ULLONG n;
     cin >> n;
-    InputData *data = new InputData("/home/chris/test.txt", ios::trunc);
-    //InputData *data = new InputData("/home/philipp/test.txt", ios::trunc);
+    //InputData *data = new InputData("/home/chris/test.txt", ios::trunc);
+    InputData *data = new InputData("/home/philipp/test.txt", ios::trunc);
     mt19937 *rng = new mt19937(1);
     uniform_int_distribution<ULLONG> *dist = new uniform_int_distribution<ULLONG>;
     for(ULLONG i = 0; i < n; i++) {
@@ -306,8 +306,8 @@ void readData(char* filename, ULLONG* data, ULLONG* data_length) {
 }
 
 Configuration readConfig() {
-    INIReader reader("/home/chris/CLionProjects/Hashing/config.ini"); //TODO this path should be changed!!!
-    //INIReader reader("/home/philipp/ClionProjects/Hashing/config.ini");
+    //INIReader reader("/home/chris/CLionProjects/Hashing/config.ini"); //TODO this path should be changed!!!
+    INIReader reader("/home/philipp/ClionProjects/Hashing/config.ini");
 
     if (reader.ParseError() < 0) {
         cout << "Can't load 'config.ini'\n" << reader.ParseError();
@@ -320,6 +320,8 @@ Configuration readConfig() {
     config.m_coeff = reader.GetReal("Hashing", "m_coeff", 2);
     config.m_exp = reader.GetReal("Hashing", "m_exp", 2.0/3);
     config.additional_bits_uhf = (unsigned short) reader.GetInteger("Hashing", "additional_bits_uhf", 6);
+    config.num_of_tries_split = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_split", 42);
+    config.num_of_tries_goodpairs = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_goodpairs", 42);
     config.mi_coeff = reader.GetReal("Hashing", "mi_coeff", 1.25);
     config.tab_rows_coeff = reader.GetReal("Hashing", "tab_rows_coeff", 2);
     config.tab_rows_exp = reader.GetReal("Hashing", "tab_rows_exp", 0.75);
@@ -332,8 +334,8 @@ Configuration readConfig() {
     return config;
 }
 
-void testPerfectHashFunction(PerfectHashFunction *phf, InputData *data) {
-    cout << "\nTest Perfect Hashfunction" << endl;
+bool testPerfectHashFunction(Configuration &config, InputData *data, PerfectHashFunction *phf, Statistics &stats) {
+
     ULLONG datalength = data->getLength();
     ULLONG range = phf->getRange();
     ULLONG key;
@@ -341,7 +343,28 @@ void testPerfectHashFunction(PerfectHashFunction *phf, InputData *data) {
     ULLONG i;
     unsigned char* testarray = new unsigned char[(range>>3)+1]();
     bool perfect = true;
-    for(i = 0; i < data->getLength(); i++) {
+
+    // Stats
+    stats.eval_start = clock();
+    // Stats end
+
+    // Debug
+    if(config.debug_mode) {
+        cout << "### Test Perfect Hash Function ###" << endl;
+        cout << "Check " << datalength << " keys:" << endl;
+    }
+    short percentage = -1;
+    // Debug end
+
+    for(i = 0; i < datalength; i++) {
+        // Debug
+        if(config.debug_mode) {
+            if( (i*100) / datalength != percentage) {
+                percentage = (i*100) / datalength;
+                cout << "\r " << percentage << "% checked." << flush;
+            }
+        }
+        // Debug end
         key = data->getValue(i);
         hashvalue = phf->evaluate(key);
         if(GETBIT(testarray, hashvalue)) {
@@ -350,11 +373,30 @@ void testPerfectHashFunction(PerfectHashFunction *phf, InputData *data) {
         }
         SETBIT(testarray, hashvalue, 1);
     }
+    // Stats
+    stats.eval_end = clock();
+    stats.eval_time = stats.eval_end - stats.eval_start;
+    // Stats end
     if(perfect) {
-        cout << "SUCCESSFUL :-)" << endl;
+        // Debug
+        if(config.debug_mode) {
+            cout << "\r 100% checked." << endl;
+            cout << "### Test Perfect Hash Function Successful ###" << endl;
+        }
+        // Debug end
+        // Stats
+        stats.avg_eval_time = (long double)stats.eval_time / (long double)datalength;
+        stats.eval_success = true;
+        // Stats end
+        return true;
     } else {
-        cout << "UNSUCCESSFUL :-(" << endl;
-        cout << "data no. " << i << ": key " << key << ", hashvalue " << hashvalue << endl;
+        // Debug
+        if(config.debug_mode) {
+            cout << "\nKey no. " << i << " (" << key << ") with  hash value " << hashvalue << " collided." << endl;
+            cout << "### Test Perfect Hash Function Unsuccessful ###" << endl;
+        }
+        // Debug end
+        return false;
     }
 }
 
@@ -383,12 +425,14 @@ int main() {
 /*    testInputData();/*
     testCreateInputData();/**/
     testCreateRandomInputData();/**/
-    InputData *data = new InputData("/home/chris/test.txt");
-    //InputData *data = new InputData("/home/philipp/test.txt");
+    //InputData *data = new InputData("/home/chris/test.txt");
+    InputData *data = new InputData("/home/philipp/test.txt");
 
-    PerfectHashFunction* phf = new PerfectHashFunction(config, data);
+    Statistics stats;
 
-    testPerfectHashFunction(phf, data);
+    PerfectHashFunction* phf = new PerfectHashFunction(config, data, stats);
+
+    testPerfectHashFunction(config, data, phf, stats);
 
     data->close();
     delete data;

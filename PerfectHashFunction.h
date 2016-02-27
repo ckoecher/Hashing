@@ -43,13 +43,13 @@ private:
     unsigned char* _g;       // [offset[m]] -> [3]; 8 bit <-> 4 values
     bool _debug_mode;       // indicates whether to output debug notes or not
 
-    void _configure(Configuration config, ULLONG data_length); //step 1 + bit masks
+    void _configure(Configuration &config, ULLONG data_length); //step 1 + bit masks
     void _createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 2
     ULLONG _evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, ULLONG modulus);
-    bool _split(Configuration config, InputData *data, InputData *bucket_data,
-                ULLONG *&bucket_offsets, ULLONG *max_bucket_size, ULLONG *max_mi); //steps 4-7 + _tab_width
-    void _createGoodPairs(InputData *bucket_data, ULLONG *bucket_offsets, ULLONG max_bucket_size, mt19937* rng,
-                          uniform_int_distribution<ULLONG>* dist); //step 8
+    bool _split(Configuration &config, InputData *data, InputData *bucket_data,
+                ULLONG *&bucket_offsets, ULLONG *max_bucket_size, ULLONG *max_mi, Statistics &stats); //steps 4-7 + _tab_width
+    void _createGoodPairs(Configuration &config, InputData *bucket_data, ULLONG *bucket_offsets, ULLONG max_bucket_size, mt19937* rng,
+                          uniform_int_distribution<ULLONG>* dist, Statistics &stats); //step 8
     void _createRandomTables(mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 9
     void _createRandomFactor(ULLONG bucket_num, mt19937* rng, uniform_int_distribution<ULLONG>* dist); //step 10.1
     void _computeGij(ULLONG bucket_num, ULLONG *acyclicity_test_array, InputData *bucket_data, ULLONG bucket_offset, ULLONG bucket_size); //step 10.2, 11-12
@@ -63,10 +63,11 @@ public:
     virtual ~PerfectHashFunction() { _clear(); }
 
 public:
-    PerfectHashFunction(Configuration config, InputData *data);
+    PerfectHashFunction(Configuration &config, InputData *data, Statistics &stats);
     // TODO int instead of ULLONG? only one bit/one number needed to express "not found": ULLONG_MAX?
     ULLONG evaluate(ULLONG x);
     ULLONG getRange();
+    ULLONG getSizeInBytes();
 };
 
 #endif //HASHING_PERFECTHASHFUNCTION_H
