@@ -334,6 +334,35 @@ Configuration readConfig() {
     return config;
 }
 
+Configuration readConfig(string fileName) {
+    INIReader reader(fileName);
+
+    if (reader.ParseError() < 0) {
+        //cout << "Can't load 'config.ini'\n" << reader.ParseError();
+        cout << "Cannot load configuration file " << fileName << "." << endl << reader.ParseError() << endl;
+        throw 0; //TODO throw an exception here!
+    }
+
+    struct Configuration config;
+    config.k = (unsigned short) reader.GetInteger("Hashing", "k", 32);
+    config.l = (unsigned short) reader.GetInteger("Hashing", "l", 2);
+    config.m_coeff = reader.GetReal("Hashing", "m_coeff", 2);
+    config.m_exp = reader.GetReal("Hashing", "m_exp", 2.0/3);
+    config.additional_bits_uhf = (unsigned short) reader.GetInteger("Hashing", "additional_bits_uhf", 6);
+    config.num_of_tries_split = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_split", 42);
+    config.num_of_tries_goodpairs = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_goodpairs", 42);
+    config.mi_coeff = reader.GetReal("Hashing", "mi_coeff", 1.25);
+    config.tab_rows_coeff = reader.GetReal("Hashing", "tab_rows_coeff", 2);
+    config.tab_rows_exp = reader.GetReal("Hashing", "tab_rows_exp", 0.75);
+    config.additional_bits_tab = (unsigned short) reader.GetInteger("Hashing", "additional_bits_tab", 6);
+    config.num_of_tries_random_tab = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_random_tab", 42); //TODO which default value?
+    config.num_of_tries_random_si = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_random_si", 42); //TODO which default value?
+    config.seed = (ULLONG) reader.GetInteger("Hashing", "seed", 123456); //TODO which default value?
+    config.debug_mode = reader.GetBoolean("Hashing", "debug_mode", true);
+
+    return config;
+}
+
 bool testPerfectHashFunction(Configuration &config, InputData *data, PerfectHashFunction *phf, Statistics &stats) {
 
     ULLONG datalength = data->getLength();
@@ -400,40 +429,117 @@ bool testPerfectHashFunction(Configuration &config, InputData *data, PerfectHash
     }
 }
 
-int main() {
-/*    testBitPairs();
-    testTypeSizes();
-    testMersenneTwister();
-    testOldBitpairs();
-    testSetGetBit();
-    testSetGetCharBitPairs();*/
+void saveStatistics(string statsFileName, string configFileName, string dataFileName, Statistics stats) {
+    ofstream file(statsFileName, ios::out | ios::app);
 
-    Configuration config = readConfig();
-/*    ULLONG data_length = 10;
-    ULLONG* data = new ULLONG[data_length];
-    for(ULLONG i = 0; i < data_length; i++) {
-        data[i] = i;
-    }*/
+    file << "\"" << configFileName << "\"";
+    file << ";\"" << dataFileName << "\"";
 
+    file << ";" << stats.clocks_per_sec;
+    file << ";" << stats.num_of_keys;
+    file << ";" << stats.range_of_phf;
+    file << ";" << stats.size_in_bytes;
 
-    // TODO n = 16 => "terminate called after throwing an instance of 'int'" after createGoodPairs
-    // TODO n = 5000 => bucket 0 no good pair of hash functions
+    //file << ";" << stats.creation_start;
+    //file << ";" << stats.creation_end;
+    file << ";" << stats.creation_time;
+    //file << ";" << stats.creation_success;
 
-    // TODO with testCreateRandomInputData, n = 1000000
-    // hashvalue(data no. 229) == hashvalue(data no. 1326)
+    //file << ";" << stats.setup_start;
+    //file << ";" << stats.setup_end;
+    file << ";" << stats.setup_time;
+    //file << ";" << stats.setup_succuess;
+
+    //file << ";" << stats.split_start;
+    //file << ";" << stats.split_end;
+    file << ";" << stats.split_time;
+    file << ";" << stats.split_tries;
+    file << ";" << stats.split_success;
+
+    file << ";" << stats.num_of_buckets;
+    file << ";" << stats.max_bucket_size;
+    file << ";" << stats.min_bucket_size;
+    file << ";" << stats.avg_bucket_size;
+
+    //file << ";" << stats.goodpairs_start;
+    //file << ";" << stats.goodpairs_end;
+    file << ";" << stats.goodpairs_time;
+    file << ";" << stats.goodpairs_total_tries;
+    file << ";" << stats.goodpairs_success;
+
+    //file << ";" << stats.buckets_start;
+    //file << ";" << stats.buckets_end;
+    file << ";" << stats.buckets_time;
+    file << ";" << stats.random_tab_tries;
+    file << ";" << stats.random_si_total_tries;
+    file << ";" << stats.buckets_success;
+
+    //file << ";" << stats.eval_start;
+    //file << ";" << stats.eval_end;
+    file << ";" << stats.eval_time;
+    file << ";" << stats.avg_eval_time;
+    file << ";" << stats.eval_success;
+
+    file << endl;
+    file.close();
+}
+
+int main(int argc, char* argv[]) {
+
+    // Parse command line arguments
+    // argv[0]: path and name of program itself
+    // argv[1]: path of configuration file
+    // argv[2]: path of data file
+    // argv[2]: path of statistics file
+
+//    string configFileName = "/home/philipp/ClionProjects/Hashing/config.ini";
+//    //string configFileName = "/home/chris/CLionProjects/Hashing/config.ini";
+//    string dataFileName = "/home/philipp/test.txt";
+//    //string dataFileName = "/home/chris/test.txt";
+//    string statsFileName = "/home/philipp/statistics.csv";
+//    //string statsFileName = "/home/chris/statistics.csv";
+
+    string configFileName;
+    string dataFileName;
+    string statsFileName;
+
+    if(argc < 4) {
+        cerr << "Too few command line arguments!" << endl;
+        cerr << "./Hashing <configuration file> <data file> <statistics file>" << endl;
+        return 1;
+    }
+
+    configFileName = argv[1];
+    dataFileName = argv[2];
+    statsFileName = argv[3];
+
+//    if(argc >= 2) {
+//        configFileName = argv[1];
+//        if(argc >= 3) {
+//            dataFileName = argv[2];
+//            if(argc >= 4) {
+//                statsFileName = argv[3];
+//            }
+//        }
+//    }
 
 /*    testInputData();/*
-    testCreateInputData();/**/
+    testCreateInputData();/*
     testCreateRandomInputData();/**/
-    //InputData *data = new InputData("/home/chris/test.txt");
-    InputData *data = new InputData("/home/philipp/test.txt");
 
+    // Setup
+    Configuration config = readConfig(configFileName);
+    InputData *data = new InputData(dataFileName);
     Statistics stats;
 
+    // Creation and Test
     PerfectHashFunction* phf = new PerfectHashFunction(config, data, stats);
-
     testPerfectHashFunction(config, data, phf, stats);
 
+    // Save statistics
+    saveStatistics(statsFileName, configFileName, dataFileName, stats);
+
+    // Cleanup
     data->close();
     delete data;
     delete phf;
