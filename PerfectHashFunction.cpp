@@ -452,9 +452,10 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
     *max_mi = 0;
     for(ULLONG i = 1; i < _m+1; i++) {
         mi_1 = (ULLONG) ceil(config.mi_coeff * bucket_sizes[i-1]);
-        // TODO maybe not necessary (to eliminate problem with %(mi-2))
-        if(mi_1 > 0 && mi_1 < 3) {
-            mi_1 = 3;
+        // to eliminate problem with %(mi-2)
+        // to eliminate problem with small buckets and acyclicity
+        if(mi_1 > 0 && mi_1 < 10) {
+            mi_1 = 10;
         }
         if(*max_mi < mi_1) {
             *max_mi = mi_1;
