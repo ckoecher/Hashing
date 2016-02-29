@@ -267,7 +267,6 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     // delete temporary data
     // delete nullptr has no effect
     //delete[] splitted_data;
-    bucket_data->close();
     delete bucket_data;
     //delete[] bucket_sizes;
     delete[] acyclicity_test_array;

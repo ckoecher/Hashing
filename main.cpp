@@ -212,13 +212,12 @@ void testInputData() {
     delete output;
 }
 
-void testCreateInputData() {
+void testCreateInputData(string dataFileName) {
     cout << "\nCreate Input Data" << endl;
     cout << "n = ";
     ULLONG n;
     cin >> n;
-    //InputData *data = new InputData("/home/chris/test.txt", ios::trunc);
-    InputData *data = new InputData("/home/philipp/test.txt", ios::trunc);
+    InputData *data = new InputData(dataFileName, ios::trunc);
     for(ULLONG i = 0; i < n; i++) {
         data->setNextValue(i);
     }
@@ -226,13 +225,12 @@ void testCreateInputData() {
     delete data;
 }
 
-void testCreateRandomInputData() {
+void testCreateRandomInputData(string dataFileName) {
     cout << "\nCreate Random Input Data" << endl;
     cout << "n = ";
     ULLONG n;
     cin >> n;
-    //InputData *data = new InputData("/home/chris/test.txt", ios::trunc);
-    InputData *data = new InputData("/home/philipp/test.txt", ios::trunc);
+    InputData *data = new InputData(dataFileName, ios::trunc);
     mt19937 *rng = new mt19937(1);
     uniform_int_distribution<ULLONG> *dist = new uniform_int_distribution<ULLONG>;
     for(ULLONG i = 0; i < n; i++) {
@@ -524,8 +522,8 @@ int main(int argc, char* argv[]) {
 //    }
 
 /*    testInputData();/*
-    testCreateInputData();/*
-    testCreateRandomInputData();/**/
+    testCreateInputData(dataFileName);/**/
+    testCreateRandomInputData(dataFileName);/**/
 
     // Setup
     Configuration config = readConfig(configFileName);
@@ -533,16 +531,20 @@ int main(int argc, char* argv[]) {
     Statistics stats;
 
     // Creation and Test
-    PerfectHashFunction* phf = new PerfectHashFunction(config, data, stats);
-    testPerfectHashFunction(config, data, phf, stats);
+    PerfectHashFunction* phf;
+    try {
+        phf = new PerfectHashFunction(config, data, stats);
+        testPerfectHashFunction(config, data, phf, stats);
+        delete phf;
+    } catch(int e) {
+        cerr << "Could not create Perfect Hash Function." << endl;
+    }
 
     // Save statistics
     saveStatistics(statsFileName, configFileName, dataFileName, stats);
 
     // Cleanup
-    data->close();
     delete data;
-    delete phf;
 
     return 0;
 }
