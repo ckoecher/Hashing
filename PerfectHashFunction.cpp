@@ -133,6 +133,10 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 //    }
 //    // Debug end
 
+    //_tab_rows = (ULLONG)ceil(config.tab_rows_coeff * pow(data->getLength(), config.tab_rows_exp));
+    _tab_rows = (ULLONG)ceil(config.tab_rows_coeff * pow(max_bucket_size*max_bucket_size, config.tab_rows_exp));
+    _h_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
+
     // RNG begin
     dist_h_coeffs = new uniform_int_distribution<ULLONG>(0, _h_mod_mask);
     // RNG end
@@ -292,7 +296,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     stats.creation_time = stats.creation_end - stats.creation_start;
     stats.creation_success = true;
     stats.range_of_phf = getRange();
-    stats.size_in_bytes = getSizeInBytes();
+    _computeSizes(stats);
     // Stats end
 
     // Debug
@@ -305,10 +309,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 void PerfectHashFunction::_configure(Configuration &config, ULLONG data_length) {
     _k = config.k;
     _l = config.l;
-    _m = (ULLONG)ceil(config.m_coeff * pow(data_length, config.m_exp));
+    //_m = (ULLONG)ceil(config.m_coeff * pow(data_length, config.m_exp));
+    _m = min((ULLONG)ceil(config.m_coeff * pow(data_length, config.m_exp)),(ULLONG)ceil((long double)data_length/20.0));
     _h_split_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_m)) + config.additional_bits_uhf)-1;
-    _tab_rows = (ULLONG)ceil(config.tab_rows_coeff * pow(data_length, config.tab_rows_exp));
-    _h_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
     _debug_mode = config.debug_mode;
 }
 
@@ -342,7 +345,8 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
     ULLONG* bucket_sizes = new ULLONG[_m](); // == n_i; initialized to zero because of ()
     ULLONG hv; // hash value by h_split
     ULLONG mi_1; // for computation of max_mi and _offset
-    ULLONG bucketOverflowSize = (ULLONG)floor(sqrt(data_length)); // data_length >= 2^53 => maybe not exact result
+    //ULLONG bucketOverflowSize = (ULLONG)floor(sqrt(data_length)); // data_length >= 2^53 => maybe not exact result
+    ULLONG bucketOverflowSize = max((ULLONG)floor(sqrt(data_length)),(ULLONG)40); // data_length >= 2^53 => maybe not exact result
     ULLONG value; // temporary value from data stream
 
 //    // Debug
@@ -908,6 +912,21 @@ void PerfectHashFunction::_clear() {
 
 ULLONG PerfectHashFunction::getRange() {
     return _offset[_m];
+}
+
+void PerfectHashFunction::_computeSizes(Statistics &stats) {
+    stats.size_in_bytes_general = 2 * sizeof(unsigned short);
+    stats.size_in_bytes_split_uhf = (_l + 3) * sizeof(ULLONG);
+    stats.size_in_bytes_offsets = (_m + 1) * sizeof(ULLONG);
+    stats.size_in_bytes_good_uhf_pairs = (2 * _m * (_l + 1) + 2) * sizeof(ULLONG);
+    stats.size_in_bytes_random_width = sizeof(unsigned short);
+    stats.size_in_bytes_random_table = (ULLONG) ceil((long double)(6 * _tab_rows * _tab_width) / 8.0l);
+    stats.size_in_bytes_random_factor = (ULLONG) ceil((long double)(_m * _tab_width) / 8.0l);
+    stats.size_in_bytes_g_array = ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
+    stats.size_in_bytes = stats.size_in_bytes_general + stats.size_in_bytes_offsets + stats.size_in_bytes_split_uhf
+                          + stats.size_in_bytes_good_uhf_pairs + stats.size_in_bytes_random_width
+                          + stats.size_in_bytes_random_table + stats.size_in_bytes_random_factor
+                          + stats.size_in_bytes_g_array;
 }
 
 ULLONG PerfectHashFunction::getSizeInBytes() {

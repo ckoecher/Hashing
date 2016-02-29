@@ -427,16 +427,28 @@ bool testPerfectHashFunction(Configuration &config, InputData *data, PerfectHash
     }
 }
 
-void saveStatistics(string statsFileName, string configFileName, string dataFileName, Statistics stats) {
+void saveStatistics(string statsFileName, string configFileName, Configuration &config, string dataFileName, Statistics stats) {
     ofstream file(statsFileName, ios::out | ios::app);
 
     file << "\"" << configFileName << "\"";
+    file << ";" << config.m_coeff;
+    file << ";" << config.m_exp;
+    file << ";" << config.seed;
     file << ";\"" << dataFileName << "\"";
 
     file << ";" << stats.clocks_per_sec;
     file << ";" << stats.num_of_keys;
     file << ";" << stats.range_of_phf;
+
     file << ";" << stats.size_in_bytes;
+    file << ";" << stats.size_in_bytes_general;
+    file << ";" << stats.size_in_bytes_split_uhf;
+    file << ";" << stats.size_in_bytes_offsets;
+    file << ";" << stats.size_in_bytes_good_uhf_pairs;
+    file << ";" << stats.size_in_bytes_random_width;
+    file << ";" << stats.size_in_bytes_random_table;
+    file << ";" << stats.size_in_bytes_random_factor;
+    file << ";" << stats.size_in_bytes_g_array;
 
     //file << ";" << stats.creation_start;
     //file << ";" << stats.creation_end;
@@ -541,7 +553,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Save statistics
-    saveStatistics(statsFileName, configFileName, dataFileName, stats);
+    saveStatistics(statsFileName, configFileName, config, dataFileName, stats);
 
     // Cleanup
     delete data;

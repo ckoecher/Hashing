@@ -72,7 +72,16 @@ struct Statistics {
     ULLONG clocks_per_sec = CLOCKS_PER_SEC;
     ULLONG num_of_keys = 0;
     ULLONG range_of_phf = 0;
+
     ULLONG size_in_bytes = 0;
+    ULLONG size_in_bytes_general = 0;
+    ULLONG size_in_bytes_split_uhf = 0;
+    ULLONG size_in_bytes_offsets = 0;
+    ULLONG size_in_bytes_good_uhf_pairs = 0;
+    ULLONG size_in_bytes_random_width = 0;
+    ULLONG size_in_bytes_random_table = 0;
+    ULLONG size_in_bytes_random_factor = 0;
+    ULLONG size_in_bytes_g_array = 0;
 
     clock_t creation_start = 0;
     clock_t creation_end = 0;

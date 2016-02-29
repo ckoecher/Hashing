@@ -58,6 +58,7 @@ private:
                  ULLONG bucket_size, ULLONG *queue, ULLONG &next_queue_index, ULLONG *edgesOf,
                  ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, unsigned char *removed);
     void _clear(); // delete data
+    void _computeSizes(Statistics &stats);
 
 public:
     virtual ~PerfectHashFunction() { _clear(); }
