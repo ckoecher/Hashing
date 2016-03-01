@@ -9,26 +9,34 @@
 using namespace std;
 
 InputData::InputData(string fileName, ios::openmode flags) {
+    clock_t time = clock();
+
     _stream.open(fileName, flags | fstream::in | fstream::out);
     _size = sizeof(ULLONG);
 
     //fetch the data length
     _stream.seekg(0, fstream::end);
     _length = (ULLONG) _stream.tellg() / _size;
-
     _stream.seekg(0);
+
+    _evalTime = clock() - time;
 }
 
 InputData::InputData(ios::openmode flags) {
+    clock_t time = clock();
+
     _size = sizeof(ULLONG);
     _length = 0;
 
     char *tmpName = strdup("/tmp/tmpfileXXXXXX");
     mkstemp(tmpName);
     _stream.open(tmpName, flags | fstream::in | fstream::out);
+
+    _evalTime = clock() - time;
 }
 
 void InputData::setValue(ULLONG value, ULLONG position) {
+    clock_t time = clock();
     char str[_size];
 
     //convert the data
@@ -40,9 +48,12 @@ void InputData::setValue(ULLONG value, ULLONG position) {
     //write the data
     _stream.seekp((long) position * _size);
     _stream.write(str, _size);
+
+    _evalTime += clock() - time;
 }
 
 void InputData::setNextValue(ULLONG value) {
+    clock_t time = clock();
     char str[_size];
 
     //convert the data
@@ -53,9 +64,12 @@ void InputData::setNextValue(ULLONG value) {
 
     //write the data
     _stream.write(str, _size);
+
+    _evalTime += clock() - time;
 }
 
 ULLONG InputData::getValue(ULLONG position) {
+    clock_t time = clock();
     ULLONG value = 0;
     char str[_size];
 
@@ -70,10 +84,13 @@ ULLONG InputData::getValue(ULLONG position) {
     }
     value |= (ULLONG) (unsigned char) str[_size - 1];
 
+    _evalTime += clock() - time;
+
     return value;
 }
 
 ULLONG InputData::getNextValue() {
+    clock_t time = clock();
     ULLONG value = 0;
     char str[_size];
 
@@ -87,11 +104,21 @@ ULLONG InputData::getNextValue() {
     }
     value |= (ULLONG) (unsigned char) str[_size - 1];
 
+    _evalTime += clock() - time;
+
     return value;
 }
 
 ULLONG InputData::getLength() {
     return _length;
+}
+
+clock_t InputData::getEvalTime() {
+    return _evalTime;
+}
+
+void InputData::resetEvalTime() {
+    _evalTime = 0;
 }
 
 void InputData::close() {

@@ -12,6 +12,7 @@ private:
     std::fstream _stream;
     int _size;
     ULLONG _length;
+    clock_t _evalTime;
 
 public:
     InputData(std::string fileName, ios::openmode flags = ios::in | ios::out);
@@ -21,6 +22,8 @@ public:
     ULLONG getValue(ULLONG position);
     ULLONG getNextValue();
     ULLONG getLength();
+    clock_t getEvalTime();
+    void resetEvalTime();
     void close();
 
     virtual ~InputData() { close(); }
