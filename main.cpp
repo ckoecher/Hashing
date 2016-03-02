@@ -373,6 +373,7 @@ bool testPerfectHashFunction(Configuration &config, InputData *data, PerfectHash
 
     // Stats
     stats.eval_start = clock();
+    data->resetEvalTime();
     // Stats end
 
     // Debug
@@ -403,6 +404,7 @@ bool testPerfectHashFunction(Configuration &config, InputData *data, PerfectHash
     // Stats
     stats.eval_end = clock();
     stats.eval_time = stats.eval_end - stats.eval_start;
+    stats.eval_io = data->getEvalTime();
     // Stats end
     if(perfect) {
         // Debug
@@ -413,6 +415,7 @@ bool testPerfectHashFunction(Configuration &config, InputData *data, PerfectHash
         // Debug end
         // Stats
         stats.avg_eval_time = (long double)stats.eval_time / (long double)datalength;
+        stats.avg_eval_io = (long double)stats.eval_io / (long double)datalength;
         stats.eval_success = true;
         // Stats end
         return true;
@@ -428,9 +431,34 @@ bool testPerfectHashFunction(Configuration &config, InputData *data, PerfectHash
 }
 
 void saveStatistics(string statsFileName, string configFileName, Configuration &config, string dataFileName, Statistics stats) {
-    ofstream file(statsFileName, ios::out | ios::app);
 
-    file << "\"" << configFileName << "\"";
+    // (create and) open statistics file, new results will be appended
+    fstream file(statsFileName, ios::out | ios::app);
+
+    // if file is empty, add header row
+    if (file.tellg() == 0) {
+        file << "0"
+             << ";configFileName;m_coeff;m_exp;seed;dataFileName"
+             << ";clocks_per_sec;num_of_keys;range_of_phf"
+             << ";size_in_bytes;size_in_bytes_general;size_in_bytes_split_uhf;size_in_bytes_offsets"
+             << ";size_in_bytes_good_uhf_pairs;size_in_bytes_random_width;size_in_bytes_random_table"
+             << ";size_in_bytes_random_factor;size_in_bytes_g_array"
+             << ";compact_size_in_bytes;compact_size_in_bytes_general;compact_size_in_bytes_split_uhf;compact_size_in_bytes_offsets"
+             << ";compact_size_in_bytes_good_uhf_pairs;compact_size_in_bytes_random_width;compact_size_in_bytes_random_table"
+             << ";compact_size_in_bytes_random_factor;compact_size_in_bytes_g_array"
+             << ";creation_time;creation_io"
+             << ";setup_time;setup_io"
+             << ";split_time;split_io;split_tries;split_success"
+             << ";num_of_buckets;max_bucket_size;min_bucket_size;avg_bucket_size"
+             << ";goodpairs_time;goodpairs_io;goodpairs_total_tries;goodpairs_success"
+             << ";buckets_time;buckets_io;random_tab_tries;random_si_total_tries;buckets_success"
+             << ";eval_time;eval_io;avg_eval_time;avg_eval_io;eval_success"
+             << endl;
+    }
+
+    // save statistics
+    file << "1";
+    file << ";\"" << configFileName << "\"";
     file << ";" << config.m_coeff;
     file << ";" << config.m_exp;
     file << ";" << config.seed;
@@ -450,19 +478,32 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     file << ";" << stats.size_in_bytes_random_factor;
     file << ";" << stats.size_in_bytes_g_array;
 
+    file << ";" << stats.compact_size_in_bytes;
+    file << ";" << stats.compact_size_in_bytes_general;
+    file << ";" << stats.compact_size_in_bytes_split_uhf;
+    file << ";" << stats.compact_size_in_bytes_offsets;
+    file << ";" << stats.compact_size_in_bytes_good_uhf_pairs;
+    file << ";" << stats.compact_size_in_bytes_random_width;
+    file << ";" << stats.compact_size_in_bytes_random_table;
+    file << ";" << stats.compact_size_in_bytes_random_factor;
+    file << ";" << stats.compact_size_in_bytes_g_array;
+
     //file << ";" << stats.creation_start;
     //file << ";" << stats.creation_end;
     file << ";" << stats.creation_time;
+    file << ";" << stats.creation_io;
     //file << ";" << stats.creation_success;
 
     //file << ";" << stats.setup_start;
     //file << ";" << stats.setup_end;
     file << ";" << stats.setup_time;
+    file << ";" << stats.setup_io;
     //file << ";" << stats.setup_succuess;
 
     //file << ";" << stats.split_start;
     //file << ";" << stats.split_end;
     file << ";" << stats.split_time;
+    file << ";" << stats.split_io;
     file << ";" << stats.split_tries;
     file << ";" << stats.split_success;
 
@@ -474,12 +515,14 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     //file << ";" << stats.goodpairs_start;
     //file << ";" << stats.goodpairs_end;
     file << ";" << stats.goodpairs_time;
+    file << ";" << stats.goodpairs_io;
     file << ";" << stats.goodpairs_total_tries;
     file << ";" << stats.goodpairs_success;
 
     //file << ";" << stats.buckets_start;
     //file << ";" << stats.buckets_end;
     file << ";" << stats.buckets_time;
+    file << ";" << stats.buckets_io;
     file << ";" << stats.random_tab_tries;
     file << ";" << stats.random_si_total_tries;
     file << ";" << stats.buckets_success;
@@ -487,7 +530,9 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     //file << ";" << stats.eval_start;
     //file << ";" << stats.eval_end;
     file << ";" << stats.eval_time;
+    file << ";" << stats.eval_io;
     file << ";" << stats.avg_eval_time;
+    file << ";" << stats.avg_eval_io;
     file << ";" << stats.eval_success;
 
     file << endl;

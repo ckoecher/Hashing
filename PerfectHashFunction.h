@@ -69,6 +69,7 @@ public:
     ULLONG evaluate(ULLONG x);
     ULLONG getRange();
     ULLONG getSizeInBytes();
+    ULLONG getCompactSizeInBytes();
 };
 
 #endif //HASHING_PERFECTHASHFUNCTION_H

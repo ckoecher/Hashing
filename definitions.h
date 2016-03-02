@@ -83,19 +83,32 @@ struct Statistics {
     ULLONG size_in_bytes_random_factor = 0;
     ULLONG size_in_bytes_g_array = 0;
 
+    ULLONG compact_size_in_bytes = 0;
+    ULLONG compact_size_in_bytes_general = 0;
+    ULLONG compact_size_in_bytes_split_uhf = 0;
+    ULLONG compact_size_in_bytes_offsets = 0;
+    ULLONG compact_size_in_bytes_good_uhf_pairs = 0;
+    ULLONG compact_size_in_bytes_random_width = 0;
+    ULLONG compact_size_in_bytes_random_table = 0;
+    ULLONG compact_size_in_bytes_random_factor = 0;
+    ULLONG compact_size_in_bytes_g_array = 0;
+
     clock_t creation_start = 0;
     clock_t creation_end = 0;
     clock_t creation_time = 0;
+    clock_t creation_io = 0;
     bool creation_success = false;
 
     clock_t setup_start = 0;
     clock_t setup_end = 0;
     clock_t setup_time = 0;
+    clock_t setup_io = 0;
     bool setup_succuess = false;
 
     clock_t split_start = 0;
     clock_t split_end = 0;
     clock_t split_time = 0;
+    clock_t split_io = 0;
     unsigned short split_tries = 0;
     bool split_success = false;
 
@@ -107,12 +120,14 @@ struct Statistics {
     clock_t goodpairs_start = 0;
     clock_t goodpairs_end = 0;
     clock_t goodpairs_time = 0;
+    clock_t goodpairs_io = 0;
     ULLONG goodpairs_total_tries = 0;
     bool goodpairs_success = false;
 
     clock_t buckets_start = 0;
     clock_t buckets_end = 0;
     clock_t buckets_time = 0;
+    clock_t buckets_io = 0;
     unsigned short random_tab_tries = 0;
     ULLONG random_si_total_tries = 0;
     bool buckets_success = false;
@@ -120,7 +135,9 @@ struct Statistics {
     clock_t eval_start = 0;
     clock_t eval_end = 0;
     clock_t eval_time = 0;
+    clock_t eval_io = 0;
     long double avg_eval_time = 0.0;
+    long double avg_eval_io = 0.0;
     bool eval_success = false;
 };
 

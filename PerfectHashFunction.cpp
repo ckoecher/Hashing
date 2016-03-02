@@ -12,6 +12,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     stats.creation_start = clock();
     stats.num_of_keys = data->getLength();
     stats.setup_start = clock();
+    data->resetEvalTime();
     // Stats end
 
     InputData *bucket_data = new InputData();
@@ -58,8 +59,10 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     // Stats
     stats.setup_end = clock();
     stats.setup_time = stats.setup_end - stats.setup_start;
+    stats.setup_io = data->getEvalTime();
     stats.setup_succuess = true;
     stats.split_start = clock();
+    data->resetEvalTime();
     // Stats end
 
     _h_split_coeffs = new ULLONG[_l+1];
@@ -100,6 +103,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     // Stats
     stats.split_end = clock();
     stats.split_time = stats.split_end - stats.split_start;
+    stats.split_io = data->getEvalTime();
     stats.split_success = true;
     stats.split_tries = num_of_tries_split;
     stats.num_of_buckets = _m;
@@ -107,6 +111,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     //stats.min_bucket_size computed in _split(...)
     stats.avg_bucket_size = (long double)stats.num_of_keys / (long double)stats.num_of_buckets;
     stats.goodpairs_start = clock();
+    bucket_data->resetEvalTime();
     // Stats end
 
 //    // Debug
@@ -174,8 +179,10 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     // Stats
     stats.goodpairs_end = clock();
     stats.goodpairs_time = stats.goodpairs_end - stats.goodpairs_start;
+    stats.goodpairs_io = bucket_data->getEvalTime();
     stats.goodpairs_success = true;
     stats.buckets_start = clock();
+    bucket_data->resetEvalTime();
     // Stats end
 
     // RNG begin
@@ -265,6 +272,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     // Stats
     stats.buckets_end = clock();
     stats.buckets_time = stats.buckets_end - stats.buckets_start;
+    stats.buckets_io = bucket_data->getEvalTime();
     stats.buckets_success = !badTables;
     // Stats end
 
@@ -294,6 +302,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     // Stats
     stats.creation_end = clock();
     stats.creation_time = stats.creation_end - stats.creation_start;
+    stats.creation_io = stats.setup_io + stats.split_io + stats.goodpairs_io + stats.buckets_io;
     stats.creation_success = true;
     stats.range_of_phf = getRange();
     _computeSizes(stats);
@@ -921,13 +930,26 @@ void PerfectHashFunction::_computeSizes(Statistics &stats) {
     stats.size_in_bytes_offsets = (_m + 1) * sizeof(ULLONG);
     stats.size_in_bytes_good_uhf_pairs = (2 * _m * (_l + 1) + 2) * sizeof(ULLONG);
     stats.size_in_bytes_random_width = sizeof(unsigned short);
-    stats.size_in_bytes_random_table = (ULLONG) ceil((long double)(6 * _tab_rows * _tab_width) / 8.0l);
-    stats.size_in_bytes_random_factor = (ULLONG) ceil((long double)(_m * _tab_width) / 8.0l);
+    stats.size_in_bytes_random_table = 6 * _tab_rows * sizeof(ULLONG);
+    stats.size_in_bytes_random_factor = _m * sizeof(ULLONG);
     stats.size_in_bytes_g_array = ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
     stats.size_in_bytes = stats.size_in_bytes_general + stats.size_in_bytes_offsets + stats.size_in_bytes_split_uhf
                           + stats.size_in_bytes_good_uhf_pairs + stats.size_in_bytes_random_width
                           + stats.size_in_bytes_random_table + stats.size_in_bytes_random_factor
                           + stats.size_in_bytes_g_array;
+
+    stats.compact_size_in_bytes_general = 2 * sizeof(unsigned short);
+    stats.compact_size_in_bytes_split_uhf = 2 * sizeof(ULLONG) + (ULLONG) ceil((long double)((_l + 1) * log2(_h_split_mod_mask+1)) / 8.0l);
+    stats.compact_size_in_bytes_offsets = (_m + 1) * sizeof(ULLONG);
+    stats.compact_size_in_bytes_good_uhf_pairs = 2 * sizeof(ULLONG) + (ULLONG) ceil((long double)((2 * _m * (_l + 1)) * log2(_h_mod_mask+1)) / 8.0l);
+    stats.compact_size_in_bytes_random_width = sizeof(unsigned short);
+    stats.compact_size_in_bytes_random_table = (ULLONG) ceil((long double)(6 * _tab_rows * _tab_width) / 8.0l);
+    stats.compact_size_in_bytes_random_factor = (ULLONG) ceil((long double)(_m * _tab_width) / 8.0l);
+    stats.compact_size_in_bytes_g_array = ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
+    stats.compact_size_in_bytes = stats.compact_size_in_bytes_general + stats.compact_size_in_bytes_offsets
+                          + stats.compact_size_in_bytes_split_uhf + stats.compact_size_in_bytes_good_uhf_pairs
+                          + stats.compact_size_in_bytes_random_width + stats.compact_size_in_bytes_random_table
+                          + stats.compact_size_in_bytes_random_factor + stats.compact_size_in_bytes_g_array;
 }
 
 ULLONG PerfectHashFunction::getSizeInBytes() {
@@ -936,6 +958,17 @@ ULLONG PerfectHashFunction::getSizeInBytes() {
     size += (_m + 1) * sizeof(ULLONG);
     size += (_l + 1) * sizeof(ULLONG);
     size += 2 * _m * (_l + 1) * sizeof(ULLONG);
+    size += (6 * _tab_rows + _m) * sizeof(ULLONG);
+    size += ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
+    return size;
+}
+
+ULLONG PerfectHashFunction::getCompactSizeInBytes() {
+    ULLONG size;
+    size = 3 * sizeof(unsigned short) + 4 * sizeof(ULLONG);
+    size += (_m + 1) * sizeof(ULLONG);
+    size += (ULLONG) ceil((long double)((_l + 1) * log2(_h_split_mod_mask+1)) / 8.0l);
+    size += (ULLONG) ceil((long double)((2 * _m * (_l + 1)) * log2(_h_mod_mask+1)) / 8.0l);
     size += (ULLONG) ceil((long double)((6 * _tab_rows + _m) * _tab_width) / 8.0l);
     size += ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
     return size;
