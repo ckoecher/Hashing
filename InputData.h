@@ -16,14 +16,23 @@ private:
 
 public:
     InputData(std::string fileName, ios::openmode flags = ios::in | ios::out);
+
     InputData(ios::openmode flags = ios::in | ios::out); //construct a temporary file
+
     void setValue(ULLONG value, ULLONG position);
+
     void setNextValue(ULLONG value);
+
     ULLONG getValue(ULLONG position);
+
     ULLONG getNextValue();
+
     ULLONG getLength();
+
     clock_t getEvalTime();
+
     void resetEvalTime();
+
     void close();
 
     virtual ~InputData() { close(); }

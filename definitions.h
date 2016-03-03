@@ -2,73 +2,56 @@
 #define HASHING_DEFINITIONS_H
 
 #include <iostream>     // cout, cin
-#include <fstream>      // ifstream, ofstream
-//#include <cstdint>      // uint_fast64_t
+#include <fstream>      // ifstream, ofstream, fstream
 #include <climits>      // ULLONG_MAX
 #include <string>       // string, stoull (to unsigned long long), stod (to double)
 #include <random>       // Mersenne twister mt19937
 #include "./inih/cpp/INIReader.h"
-//#include <functional>   // bind
 #include <assert.h>
-#include <ctime> // clock_t
+#include <ctime>        // clock_t
+
 using namespace std;
 
-//typedef uint_fast64_t UINT;
+// data type of keys
 typedef unsigned long long int ULLONG;
 
+// allows two-dimensional line by line navigation in an one-dimensional array
 #define ARR(array, rows, cols, row, col) array[row*cols+col]
 
-// array of type unsigned char*
-#define GETBITPAIR(array, tab, index) ((array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4)
-inline unsigned char getBitPair(unsigned char* array, unsigned short tab, ULLONG index) {
-    return (array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) & 3;
-}
-#define INCBITPAIR(array, tab, index) (array[index >> 1] = array[index >> 1] + (1 << ((1-tab)<<1) << ((1-(index&1))<<2)))
-#define ZEROBITPAIRS(array, tab, index) (array[index >> 1] = 0)
-// TODO ATTENTION: does not only reset array_tab[index] to zero BUT complete char array element!
+// gets and sets two bits in an array of unsigned chars (used as bitmap)
+#define GETTABBITPAIR(array, tab, index) ((array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4)
+#define INCTABBITPAIR(array, tab, index) (array[index >> 1] = array[index >> 1] + (1 << ((1-tab)<<1) << ((1-(index&1))<<2)))
+#define ZEROTABBITPAIRS(array, index) (array[index >> 1] = 0)
 
-// NOT USABLE
-#define CHARBITPAIR(array, index) ((array[index >> 2] >> 2*(3 - (index & 3))) % 4)
-#define CHARBITPAIRTABS(array, tab, index) ((unsigned char)(array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4)
-// last % 4 not replaceable by & 3 ???
-// CHARBITPAIRTABS fastest solution
-
-// slower...
-#define CHARBITPAIR3(array, index) ((array[index/4] >> 2*(3 - (index % 4))) % 4)
-#define CHARBITPAIR2(array, index) ((array[index >> 2] >> 2*(3 - (index % 4))) % 4)
-
-// gets and sets a single bit in an array of chars (used as bitmaps)
+// gets and sets a single bit in an array of unsigned chars (used as bitmap)
 #define GETBIT(array, index) (((array[index >> 3]) >> (index & 7)) & 1)
 #define SETBIT(array, index, value) (array[index >> 3] ^= (-value ^ array[index >> 3]) & (1 << (index & 7)))
 
-// gets and sets two bits in an array of chars (used as bitmap)
+// gets and sets two bits in an array of unsigned chars (used as bitmap)
 #define GETCHARBITPAIR(array, index) ((array[index >> 2]) >> ((index & 3) << 1) & 3)
-//#define SETCHARBITPAIR(array, index, value) (array[index >> 2] ^= (-value ^ array[index >> 2]) & (3 << ((index & 3) << 1)))
 #define SETCHARBITPAIR(array, index, value) (array[index>>2] = array[index>>2] & (255-(3<<((index&3)<<1))) | (value<<((index&3)<<1)))
 
+// stores configuration (parameters etc.) for current perfect hash function creation
 struct Configuration {
-    unsigned short k; // U = [(2^k)^l], k*l(<)=64, k>=1, l>=1
-    unsigned short l;
-    double m_coeff; // m = ceil(m_coeff * n^(m_exp))
-    double m_exp;
-    unsigned short additional_bits_uhf; // for 1-universal hash function
-    unsigned short num_of_tries_split;
-    unsigned short num_of_tries_goodpairs;
-    double mi_coeff; // mi = ceil(c * ni)
-    double tab_rows_coeff; // rows of tables T_i^j = tab_rows_coeff * n^(tab_rows_exp)
-    double tab_rows_exp;
-    unsigned short additional_bits_tab; // for table entries
-    unsigned short num_of_tries_random_tab;
-    unsigned short num_of_tries_random_si;
-    //bool multiple_seeds; // use just one or more seeds for randomization of Mersenne Twister
-    mt19937::result_type seed; // mt19937::result_type = unsigned long (= uint_fast32_t?)
-    bool debug_mode; //enable or disable debugger output
+    unsigned short k;                       // bit length of one key fragment
+    unsigned short l;                       // number of fragments that a key is split into
+    double m_coeff;                         // let n be the number of keys; then the set of keys will be
+    double m_exp;                           // split into m_coeff * (n ^ m_exp buckets)
+    unsigned short additional_bits_uhf;     // additional bits for computation of 1-universal hash functions to obtain (approx.) full randomness
+    unsigned short num_of_tries_split;      // maximal number of tries to split the keys into small buckets
+    unsigned short num_of_tries_goodpairs;  // maximal number of tries to find a good pair of 1-universal hash functions (for each bucket)
+    double mi_coeff;                        // the keys in a bucket of size ni shall be hashed into a range of mi_coeff * ni values
+    double tab_rows_coeff;                  // let N be the maximal bucket size; then the table of random values     rows of tables T_i^j = tab_rows_coeff * n^(tab_rows_exp)
+    double tab_rows_exp;                    // will have tab_rows_coeff * (N ^ tab_rows_exp) rows
+    unsigned short additional_bits_tab;     // additional bits for each table entry
+    unsigned short num_of_tries_random_tab; // maximal number of tries to find a table of random values to make the bucket hash functions perfect
+    unsigned short num_of_tries_random_si;  // maximal number of tries to find a random factor to make the bucket hash functions perfect (for each bucket)
+    mt19937::result_type seed;              // seed for the random number generator; mt19937::result_type == unsigned long
+    bool debug_mode;                        // enable or disable (debugger) output
 };
 
+// stores statistics of current perfect hash function creation
 struct Statistics {
-    // TODO ..._time without IO?
-    // TODO split = split_io + split_work?
-
     ULLONG clocks_per_sec = CLOCKS_PER_SEC;
     ULLONG num_of_keys = 0;
     ULLONG range_of_phf = 0;
@@ -140,10 +123,5 @@ struct Statistics {
     long double avg_eval_io = 0.0;
     bool eval_success = false;
 };
-
-//std::mt19937 generator (123);
-//std::uniform_real_distribution<double> dis(0.0, 1.0);
-//
-//double randomRealBetweenZeroAndOne = dis(generator);
 
 #endif //HASHING_DEFINITIONS_H

@@ -40,7 +40,7 @@ void InputData::setValue(ULLONG value, ULLONG position) {
     char str[_size];
 
     //convert the data
-    for(int i = _size - 1; i >= 0; i--) {
+    for (int i = _size - 1; i >= 0; i--) {
         str[i] = (char) value & 255;
         value >>= 8;
     }
@@ -57,7 +57,7 @@ void InputData::setNextValue(ULLONG value) {
     char str[_size];
 
     //convert the data
-    for(int i = _size - 1; i >= 0; i--) {
+    for (int i = _size - 1; i >= 0; i--) {
         str[i] = (char) value & 255;
         value >>= 8;
     }
@@ -78,7 +78,7 @@ ULLONG InputData::getValue(ULLONG position) {
     _stream.read(str, _size);
 
     //convert the data
-    for(int i = 0; i < _size - 1; i++) {
+    for (int i = 0; i < _size - 1; i++) {
         value |= (ULLONG) (unsigned char) str[i];
         value <<= 8;
     }
@@ -98,7 +98,7 @@ ULLONG InputData::getNextValue() {
     _stream.read(str, _size);
 
     //convert the data
-    for(int i = 0; i < _size - 1; i++) {
+    for (int i = 0; i < _size - 1; i++) {
         value |= (ULLONG) (unsigned char) str[i];
         value <<= 8;
     }

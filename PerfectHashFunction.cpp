@@ -15,42 +15,41 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     data->resetEvalTime();
     // Stats end
 
-    InputData *bucket_data = new InputData();
-    ULLONG *bucket_offsets = nullptr;
-    ULLONG max_bucket_size, max_mi;
-    ULLONG *acyclicity_test_array = nullptr;
-    bool badTables, badFactor;
-    bool split_successful;
-    unsigned short num_of_tries_split = 0;
-    unsigned short num_of_tries_tab = 0, num_of_tries_si;
+    // temporary variables and objects to compute the perfect hash function
+    InputData *bucket_data = new InputData();   // temporary file to store the split data sorted in their buckets
+    unsigned short num_of_tries_split = 0;      // current number of tries to split the data into small buckets
+    bool split_successful;                      // indicates whether the split into buckets was successful (small buckets) or not
+    ULLONG max_bucket_size;                     // maximal bucket size
+    ULLONG max_mi;                              // maximal range of all (perfect) bucket hash functions
+    ULLONG *bucket_offsets = nullptr;           // offsets of buckets to find correct block in the temporary file
+    ULLONG *acyclicity_test_array = nullptr;    // array to represent a 3-graph and to test it for acyclicity
+    bool badTables;                             // indicates whether the current table of random values has already been proven to be bad or not
+    bool badFactor;                             // indicates whether the current random factor has already been proven to be bad or not
+    unsigned short num_of_tries_tab = 0;        // current number of tries to find a good table of random values
+    unsigned short num_of_tries_si;             // current number of tries to find a good random factor
+
+    // random number generator (Mersenne twister) and distributions for random values within a specific range
+    mt19937 *rng = nullptr;                                             // Mersenne twister (RNG)
+    uniform_int_distribution<ULLONG> *dist_h_split_coeffs = nullptr;    // for split hash function
+    uniform_int_distribution<ULLONG> *dist_h_coeffs = nullptr;          // for bucket hash function
+    uniform_int_distribution<ULLONG> *dist_tables = nullptr;            // for table with random values and random factors
 
     // Debug
-    if(config.debug_mode) {
+    if (config.debug_mode) {
         cout << "### Perfect Hash Function Creation ###" << endl;
         cout << data->getLength() << " key(s)." << endl;
-//        cout << "data[i]:";
-//        for(ULLONG i = 0; i < data->getLength(); i++) {
-//            cout << " " << data->getValue(i);
-//        }
-//        cout << endl;
         cout << "# Setup..." << endl;
     }
     // Debug end
 
-    // RNG begin
-    mt19937* rng = nullptr;
-    uniform_int_distribution<ULLONG> *dist_h_split_coeffs = nullptr, *dist_h_coeffs = nullptr, *dist_tables = nullptr;
-    // RNG end
-
+    // read configuration and compute some parameters
     _configure(config, data->getLength());
 
-    // RNG begin
+    // create random number generator (Mersenne twister) with seed from configuration
     rng = new mt19937(config.seed);
-    dist_h_split_coeffs = new uniform_int_distribution<ULLONG>(0, _h_split_mod_mask);
-    // RNG end
 
     // Debug
-    if(_debug_mode) {
+    if (_debug_mode) {
         cout << "Setup successful." << endl;
         cout << "# Split data into buckets:" << endl;
     }
@@ -65,36 +64,47 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     data->resetEvalTime();
     // Stats end
 
-    _h_split_coeffs = new ULLONG[_l+1];
+    // create distribution for random coefficients of the split hash function
+    dist_h_split_coeffs = new uniform_int_distribution<ULLONG>(0, _h_split_mod_mask);
+
+    // try to create a split hash function that creates small buckets
+    _h_split_coeffs = new ULLONG[_l + 1];
     do {
         num_of_tries_split++;
         // Debug
-        if(_debug_mode) {
+        if (_debug_mode) {
             cout << "Split no. " << num_of_tries_split << endl;
         }
         // Debug end
-        _createUhf(_h_split_coeffs, rng, dist_h_split_coeffs); //step 3
+        // guess an new split hash function
+        _createUhf(_h_split_coeffs, rng, dist_h_split_coeffs);
+        // try to split the set of keys into small buckets (in temporary file)
         split_successful = _split(config, data, bucket_data, bucket_offsets, &max_bucket_size, &max_mi, stats);
-    } while(!split_successful && num_of_tries_split < config.num_of_tries_split);
+    } while (!split_successful && num_of_tries_split < config.num_of_tries_split);
     // TODO assert(ceil(log(max_mi)) <= 64)
 
-    if(!split_successful) {
-        // TODO
+    // abort if all splits were unsuccessful
+    if (!split_successful) {
         // Debug
-        if(_debug_mode) {
+        if (_debug_mode) {
             cout << "Could not split data within " << num_of_tries_split << " tries." << endl;
         }
         // Debug end
+        delete bucket_data;
+        delete[] bucket_offsets;
+        delete rng;
+        delete dist_h_split_coeffs;
+        _clear();
         throw 0;
     }
 
     // Debug
-    if(_debug_mode) {
+    if (_debug_mode) {
         cout << "Could split data within " << num_of_tries_split << " tries." << endl;
         cout << "Created " << _m << " buckets with <= " << max_bucket_size << " elements." << endl;
         cout << "Bucket sizes:" << endl;
-        for(ULLONG i = 0; i < _m; i++) {
-            cout << " " << bucket_offsets[i+1]-bucket_offsets[i];
+        for (ULLONG i = 0; i < _m; i++) {
+            cout << " " << bucket_offsets[i + 1] - bucket_offsets[i];
         }
         cout << endl;
     }
@@ -108,70 +118,42 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     stats.split_tries = num_of_tries_split;
     stats.num_of_buckets = _m;
     stats.max_bucket_size = max_bucket_size;
-    //stats.min_bucket_size computed in _split(...)
-    stats.avg_bucket_size = (long double)stats.num_of_keys / (long double)stats.num_of_buckets;
+    // stats.min_bucket_size computed in _split(...)
+    stats.avg_bucket_size = (long double) stats.num_of_keys / (long double) stats.num_of_buckets;
     stats.goodpairs_start = clock();
     bucket_data->resetEvalTime();
     // Stats end
 
-//    // Debug
-//    cout << "### after split ###" << endl;
-//    cout << "bucket_sizes[i]:" << endl;
-//    for(ULLONG i = 0; i < _m; i++) {
-//        cout << " " << bucket_offsets[i+1]-bucket_offsets[i];
-//    }
-//    // TODO bucket_sizes[i] = bucket_offsets[i+1]-bucket_offsets[i]
-//    cout << endl;
-//    cout << "bucket_offsets[i]:" << endl;
-//    for(ULLONG i = 0; i < _m+1; i++) {
-//        cout << " " << bucket_offsets[i];
-//    }
-//    cout << endl;
-//    cout << "bucket_data[i]:" << endl;
-//    for(ULLONG i = 0; i < _m; i++) {
-//        cout << "\tbucket " << i << ":";
-//        for(ULLONG j = 0; j < bucket_offsets[i+1]-bucket_offsets[i]; j++) {
-//            //cout << " " << bucket_data[i][j];
-//            cout << " " << bucket_data->getValue(bucket_offsets[i]+j);
-//        }
-//        cout << endl;
-//    }
-//    // Debug end
-
-    //_tab_rows = (ULLONG)ceil(config.tab_rows_coeff * pow(data->getLength(), config.tab_rows_exp));
-    _tab_rows = (ULLONG)ceil(config.tab_rows_coeff * pow(max_bucket_size*max_bucket_size, config.tab_rows_exp));
-    _h_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf)-1;
-
-    // RNG begin
-    dist_h_coeffs = new uniform_int_distribution<ULLONG>(0, _h_mod_mask);
-    // RNG end
-
     // Debug
-    if(_debug_mode) {
+    if (_debug_mode) {
         cout << "# Create good pairs of universal hash functions:" << endl;
     }
     // Debug end
 
-    _createGoodPairs(config, bucket_data, bucket_offsets, max_bucket_size, rng, dist_h_coeffs, stats);
+    // compute parameters for good pairs of 1-universal hash functions
+    _tab_rows = (ULLONG) ceil(config.tab_rows_coeff * pow(max_bucket_size * max_bucket_size, config.tab_rows_exp));
+    _h_mod_mask = (ULLONG) pow(2.0l, _k + ceil(log2(_tab_rows)) + config.additional_bits_uhf) - 1;
 
-//    // Debug
-//    cout << "### \"testing\" good pairs ###" << endl;
-//    cout << "bucket i: (h_0^i(x), h_1^i(x)) (h_0^i(y), h_1^i(y)) ..." << endl;
-//    for(ULLONG i = 0; i < _m; i++) {
-//        cout << "bucket " << i << ":";
-//        ULLONG *h0coeffs = _h_coeffs + ((i * (_l + 1)) << 1);
-//        ULLONG *h1coeffs = h0coeffs + _l + 1;
-//        for(int j = 0; j < bucket_offsets[i+1] - bucket_offsets[i]; j++) {
-//            cout << " (" << _evalUhf(bucket_data->getValue(bucket_offsets[i]+j), h0coeffs, _h_mod_mask, _tab_rows)
-//                 << ", " << _evalUhf(bucket_data->getValue(bucket_offsets[i]+j), h1coeffs, _h_mod_mask, _tab_rows)
-//                 << ")";
-//        }
-//        cout << endl;
-//    }
-//    // Debug end
+    // create distribution for random coefficients of the good hash function pairs
+    dist_h_coeffs = new uniform_int_distribution<ULLONG>(0, _h_mod_mask);
+
+    // try to create good hash function pairs for all buckets
+    try {
+        _createGoodPairs(config, bucket_data, bucket_offsets, max_bucket_size, rng, dist_h_coeffs, stats);
+    } catch(int e) {
+        // abort because creation was not possible
+        delete bucket_data;
+        delete[] bucket_offsets;
+        delete rng;
+        delete dist_h_split_coeffs;
+        delete dist_h_coeffs;
+        _clear();
+        throw 0;
+    }
+
 
     // Debug
-    if(_debug_mode) {
+    if (_debug_mode) {
         cout << "Created good pairs of universal hash functions for all " << _m << " buckets." << endl;
     }
     // Debug end
@@ -185,24 +167,24 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     bucket_data->resetEvalTime();
     // Stats end
 
-    // RNG begin
-    dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG)pow(2.0l, _tab_width)-1);
-    // RNG end
-
     // Debug
-    if(_debug_mode) {
+    if (_debug_mode) {
         cout << "# Create perfect hash functions for all buckets:" << endl;
     }
     // Debug end
 
-    acyclicity_test_array = new ULLONG[max_mi * 3]();
+    // create distribution for shared random values (table and factors)
+    _tab_width = (unsigned short) ceil(log2(max_bucket_size)) + config.additional_bits_tab;
+    // TODO assert(_tab_width <= 64);
+    dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG) pow(2.0l, _tab_width) - 1);
 
-    _random_table = new ULLONG[6*_tab_rows];
-    _random_factor = new ULLONG[_m]; // TODO 3*_m for factors s_(i,j)
+    // prepare data structures to compute perfect bucket hash functions
+    acyclicity_test_array = new ULLONG[max_mi * 3]();
+    _random_table = new ULLONG[6 * _tab_rows];
+    _random_factor = new ULLONG[_m];
     _g = new unsigned char[(_offset[_m] >> 2) + 1]();
 
-    // TODO debug following code
-
+    // try to create perfect hash functions for each bucket
     do {
 
         num_of_tries_tab++;
@@ -211,63 +193,67 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
         // Stats end
 
         // Debug
-        if(_debug_mode) {
+        if (_debug_mode) {
             cout << "Create new random tables (no. " << num_of_tries_tab << ")." << endl;
         }
         // Debug end
 
+        // create new table with random values
         _createRandomTables(rng, dist_tables);
         badTables = false;
 
-        for(ULLONG i = 0; i < _m; i++) {
-//            // Debug
-//            cout << "# bucket " << i << " with " << bucket_offsets[i+1]-bucket_offsets[i] << " elements #" << endl;
-//            for(ULLONG jj = 0; jj < bucket_offsets[i+1]-bucket_offsets[i]; jj++) {
-//                cout << " " << bucket_data->getValue(bucket_offsets[i]+jj) << endl;
-//            }
-//            // Debug end
+        // try to create perfect hash functions for each bucket
+        for (ULLONG i = 0; i < _m; i++) {
             // Debug
-            if(_debug_mode) {
+            if (_debug_mode) {
                 cout << "Bucket " << i << ":" << endl;
             }
             // Debug end
             num_of_tries_si = 0;
+
+            // try to create a perfect hash function for bucket i
             do {
                 num_of_tries_si++;
                 // Stats
                 stats.random_si_total_tries++;
                 // Stats end
                 // Debug
-                if(_debug_mode) {
+                if (_debug_mode) {
                     cout << " Create new random factor (no. " << num_of_tries_si << ") for bucket " << i << "." << endl;
                 }
                 // Debug end
+                // create a new random factor
                 _createRandomFactor(i, rng, dist_tables);
                 // Debug
-                if(_debug_mode) {
+                if (_debug_mode) {
                     cout << " Create 3-graph." << endl;
                 }
                 // Debug end
-                _computeGij(i, acyclicity_test_array, bucket_data, bucket_offsets[i], bucket_offsets[i+1]-bucket_offsets[i]);
+                // create a 3-graph by computing 3 hash values for each key in the bucket
+                _computeGij(i, acyclicity_test_array, bucket_data, bucket_offsets[i],
+                            bucket_offsets[i + 1] - bucket_offsets[i]);
                 // Debug
-                if(_debug_mode) {
+                if (_debug_mode) {
                     cout << " Test 3-graph for acyclicity." << endl;
                 }
                 // Debug end
-                badFactor = _isCyclic(i, acyclicity_test_array, bucket_offsets[i+1]-bucket_offsets[i]);
-            } while(badFactor && num_of_tries_si < config.num_of_tries_random_si);
+                // check if the created 3-graph is acyclic and transform the acyclic 3-graph into a perfect hash function for bucket i
+                badFactor = _isCyclic(i, acyclicity_test_array, bucket_offsets[i + 1] - bucket_offsets[i]);
+            } while (badFactor && num_of_tries_si < config.num_of_tries_random_si);
 
-            if(badFactor) {
+            // abort if all random factors were unsuccessful for bucket i, i.e. try a new table with random values
+            if (badFactor) {
                 // Debug
-                if(_debug_mode) {
-                    cout << " Could not create acyclic 3-graph for bucket " << i << " within " << num_of_tries_si << " tries." << endl;
+                if (_debug_mode) {
+                    cout << " Could not create acyclic 3-graph for bucket " << i << " within " << num_of_tries_si <<
+                    " tries." << endl;
                 }
                 // Debug end
                 badTables = true;
                 break;
             }
         }
-    } while(badTables && num_of_tries_tab < config.num_of_tries_random_tab);
+    } while (badTables && num_of_tries_tab < config.num_of_tries_random_tab);
 
     // Stats
     stats.buckets_end = clock();
@@ -276,26 +262,24 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     stats.buckets_success = !badTables;
     // Stats end
 
-    // delete temporary data
-    // delete nullptr has no effect
-    //delete[] splitted_data;
+    // cleanup of temporary data that is not needed anymore
     delete bucket_data;
-    //delete[] bucket_sizes;
+    delete[] bucket_offsets;
     delete[] acyclicity_test_array;
     delete rng;
     delete dist_h_split_coeffs;
     delete dist_h_coeffs;
     delete dist_tables;
 
-    if(badTables) {
+    // abort if all tables with random tables and all random factors could not create perfect hash functions for all buckets
+    if (badTables) {
         // Debug
-        if(_debug_mode) {
+        if (_debug_mode) {
             cout << "Could not create random tables within " << num_of_tries_tab << " tries." << endl;
         }
         // Debug end
-        // construction not successful
         _clear();
-        //TODO throw an exception!!!!
+        //TODO
         throw 0;
     }
 
@@ -309,7 +293,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     // Stats end
 
     // Debug
-    if(_debug_mode) {
+    if (_debug_mode) {
         cout << "### Perfect Hash Function Creation Successful ###" << endl;
     }
     // Debug end
@@ -318,26 +302,25 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 void PerfectHashFunction::_configure(Configuration &config, ULLONG data_length) {
     _k = config.k;
     _l = config.l;
-    //_m = (ULLONG)ceil(config.m_coeff * pow(data_length, config.m_exp));
-    _m = min((ULLONG)ceil(config.m_coeff * pow(data_length, config.m_exp)),(ULLONG)ceil((long double)data_length/20.0));
-    _h_split_mod_mask = (ULLONG)pow(2.0l, _k + ceil(log2(_m)) + config.additional_bits_uhf)-1;
+    _m = min((ULLONG) ceil(config.m_coeff * pow(data_length, config.m_exp)),
+             (ULLONG) ceil((long double) data_length / 20.0));
+    _h_split_mod_mask = (ULLONG) pow(2.0l, _k + ceil(log2(_m)) + config.additional_bits_uhf) - 1;
     _debug_mode = config.debug_mode;
 }
 
-void PerfectHashFunction::_createUhf(ULLONG* coeffs, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
-    for(int i = 0; i < _l+1; i++) {
+void PerfectHashFunction::_createUhf(ULLONG *coeffs, mt19937 *rng, uniform_int_distribution<ULLONG> *dist) {
+    for (int i = 0; i < _l + 1; i++) {
         coeffs[i] = (*dist)(*rng);
     }
 }
 
-ULLONG PerfectHashFunction::_evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, ULLONG modulus) {
-    // & modMask == Mod (modMask+1) = Mod 2^l
-    // modMask < 2^64
-    // => x*y Mod 2^l == (x*y Mod 2^64) Mod 2^l
+ULLONG PerfectHashFunction::_evalUhf(ULLONG key, ULLONG *coeff, ULLONG modMask, ULLONG modulus) {
+    // & modMask == Mod (modMask+1) = Mod 2^c
+    // modMask < 2^64 => x*y Mod 2^l == (x*y Mod 2^64) Mod 2^l
     // x*y Mod 2^64 == unsigned long long multiplication ("without" overflow)
-    ULLONG keyMask = (ULLONG)pow(2.0l, _k)-1;
+    ULLONG keyMask = (ULLONG) pow(2.0l, _k) - 1;
     ULLONG res = coeff[_l] & modMask;
-    for(int i = _l-1; i >= 0; i--) {
+    for (int i = _l - 1; i >= 0; i--) {
         res += (coeff[i] * (key & keyMask)) & modMask;
         res &= modMask;
         key >>= _k;
@@ -348,175 +331,111 @@ ULLONG PerfectHashFunction::_evalUhf(ULLONG key, ULLONG* coeff, ULLONG modMask, 
 }
 
 bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputData *bucket_data,
-                                 ULLONG *& bucket_offsets, ULLONG *max_bucket_size, ULLONG *max_mi, Statistics &stats) {
-    // initialization and instantiation
-    ULLONG data_length = data->getLength(); // = n
-    ULLONG* bucket_sizes = new ULLONG[_m](); // == n_i; initialized to zero because of ()
-    ULLONG hv; // hash value by h_split
-    ULLONG mi_1; // for computation of max_mi and _offset
-    //ULLONG bucketOverflowSize = (ULLONG)floor(sqrt(data_length)); // data_length >= 2^53 => maybe not exact result
-    ULLONG bucketOverflowSize = max((ULLONG)floor(sqrt(data_length)),(ULLONG)40); // data_length >= 2^53 => maybe not exact result
-    ULLONG value; // temporary value from data stream
-
-//    // Debug
-//    if(_debug_mode) {
-//        cout << "bucket_sizes[i]:";
-//        for(ULLONG i = 0; i < _m; i++) {
-//            cout << " " << bucket_sizes[i];
-//        }
-//        cout << endl;
-//    }
-//    // Debug end
-
-//    // Debug
-//    cout << "buckets:";
-//    // Debug end
+                                 ULLONG *&bucket_offsets, ULLONG *max_bucket_size, ULLONG *max_mi, Statistics &stats) {
+    // temporary variables and arrays to split the set of keys into small buckets
+    ULLONG data_length = data->getLength();         // number of keys
+    ULLONG *bucket_sizes = new ULLONG[_m]();        // bucket_sizes[i] == number of keys sorted into bucket i by h_split
+    ULLONG hv;                                      // some hash value h_split(key)
+    ULLONG mi_1;                                    // for computation of max_mi and _offset
+    ULLONG bucketOverflowSize = max((ULLONG) floor(sqrt(data_length)),
+                                    (ULLONG) 40);   // size of a bucket that is not small anymore
+    ULLONG value;                                   // temporary value from data stream (key)
 
     // counting
-    for(ULLONG i = 0; i < data_length; i++) {
-        hv = _evalUhf(data->getValue(i), _h_split_coeffs, _h_split_mod_mask, _m); // TODO save for usage in "sort data"?
-//        // Debug
-//        cout << " " << hv;
-//        // Debug end
-        if(bucket_sizes[hv] >= bucketOverflowSize) {
+    for (ULLONG i = 0; i < data_length; i++) {
+        hv = _evalUhf(data->getValue(i), _h_split_coeffs, _h_split_mod_mask, _m);
+        if (bucket_sizes[hv] >= bucketOverflowSize) {
             // bucket i overflow (too large)
-
-//            // Debug
-//            cout << "_split not possible with _h_split_coeffs";
-//            for(ULLONG jj = 0; jj < _l+1; jj++) {
-//                cout << " " << _h_split_coeffs[jj];
-//            }
-//            cout << endl;
-//            // Debug end
-
             delete[] bucket_sizes;
             return false;
         } else {
             bucket_sizes[hv]++;
         }
     }
-//    // Debug
-//    cout << endl;
-//    // Debug end
 
-//    // Debug
-//    if(_debug_mode) {
-//        cout << "bucket_sizes[i]:";
-//        for(ULLONG i = 0; i < _m; i++) {
-//            cout << " " << bucket_sizes[i];
-//        }
-//        cout << endl;
-//    }
-//    // Debug end
-
-    // compute max. bucket size and offsets (for next segments) for sorted data (bucket_data segments)
-    bucket_offsets = new ULLONG[_m+1](); // initialized to zero because of ()
-    bucket_offsets[0] = bucket_sizes[0]; // TODO assert [0] exists?
+    // compute maximal bucket size and offsets (for next segments) for sorted data (bucket_data segments)
+    bucket_offsets = new ULLONG[_m + 1]();
+    bucket_offsets[0] = bucket_sizes[0];
     *max_bucket_size = bucket_sizes[0];
     // Stats
     stats.min_bucket_size = bucket_sizes[0];
     // Stats end
-    for(int i = 1; i < _m; i++) {
-        bucket_offsets[i] = bucket_offsets[i-1] + bucket_sizes[i];
-        if(*max_bucket_size < bucket_sizes[i]) {
+    for (int i = 1; i < _m; i++) {
+        bucket_offsets[i] = bucket_offsets[i - 1] + bucket_sizes[i];
+        if (*max_bucket_size < bucket_sizes[i]) {
             *max_bucket_size = bucket_sizes[i];
         }
         // Stats
-        if(stats.min_bucket_size > bucket_sizes[i]) {
+        if (stats.min_bucket_size > bucket_sizes[i]) {
             stats.min_bucket_size = bucket_sizes[i];
         }
         // Stats end
     }
-    bucket_offsets[_m] = bucket_offsets[_m-1]; // TODO = data_length
+    bucket_offsets[_m] = bucket_offsets[_m - 1]; // TODO = data_length
 
-/*    // Debug
-    if(_debug_mode) {
-        cout << "bucket_offsets[i]:";
-        for(ULLONG i = 0; i < _m+1; i++) {
-            cout << " " << bucket_offsets[i];
-        }
-        cout << endl;
-    }
-    // Debug end*/
-
-    // sort data
-    //splitted_data = new ULLONG[data_length];
-    for(ULLONG i = data_length-1; i < data_length; i--) { // condition: not i >= 0 because of UNSIGNED
+    // sort data into buckets (in temporary file)
+    for (ULLONG i = data_length - 1; i < data_length; i--) {
         value = data->getValue(i);
         hv = _evalUhf(value, _h_split_coeffs, _h_split_mod_mask, _m);
-        //splitted_data[bucket_offsets[hv]-1] = value;
-        bucket_data->setValue(value, bucket_offsets[hv]-1);
+        bucket_data->setValue(value, bucket_offsets[hv] - 1);
         bucket_offsets[hv]--;
     }
-    //bucket_data = new ULLONG*[_m]; // bucket_data[i] == S[i] TODO or _m+1? (should not be needed...)
-    //bucket_data[0] = splitted_data;
-    //for(ULLONG i = 1; i < _m; i++) {
-    //    bucket_data[i] = bucket_data[i-1] + bucket_sizes[i-1];
-    //}
-    // TODO _tab_width here or in _createRandomTables?
-    _tab_width = (unsigned short)ceil(log2(*max_bucket_size))+config.additional_bits_tab;
-    // TODO assert(_tab_width <= 64);
-    _offset = new ULLONG[_m+1];
+
+    // compute offsets for ranges of bucket hash functions and maximal range of a bucket hash function
+    _offset = new ULLONG[_m + 1];
     _offset[0] = 0;
     *max_mi = 0;
-    for(ULLONG i = 1; i < _m+1; i++) {
-        mi_1 = (ULLONG) ceil(config.mi_coeff * bucket_sizes[i-1]);
-        // to eliminate problem with %(mi-2)
-        // to eliminate problem with small buckets and acyclicity
-        if(mi_1 > 0 && mi_1 < 10) {
+    for (ULLONG i = 1; i < _m + 1; i++) {
+        mi_1 = (ULLONG) ceil(config.mi_coeff * bucket_sizes[i - 1]);
+        // to eliminate problem with %(mi-2) and
+        // to eliminate problem with too small buckets and acyclicity
+        if (mi_1 > 0 && mi_1 < 10) {
             mi_1 = 10;
         }
-        if(*max_mi < mi_1) {
+        if (*max_mi < mi_1) {
             *max_mi = mi_1;
         }
-        _offset[i] = _offset[i-1] + mi_1;
+        _offset[i] = _offset[i - 1] + mi_1;
     }
 
-//    // Debug
-//    if(_debug_mode) {
-//        cout << "_offset[i]:";
-//        for(ULLONG i = 0; i < _m+1; i++) {
-//            cout << " " << _offset[i];
-//        }
-//        cout << endl;
-//    }
-//    // Debug end
-
-    // deallocate
     delete[] bucket_sizes;
     return true;
 }
 
-void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *bucket_data, ULLONG *bucket_offsets, ULLONG max_bucket_size, mt19937* rng, uniform_int_distribution<ULLONG>* dist, Statistics &stats) {
+void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *bucket_data, ULLONG *bucket_offsets,
+                                           ULLONG max_bucket_size, mt19937 *rng, uniform_int_distribution<ULLONG> *dist,
+                                           Statistics &stats) {
     // TODO debug following code (if necessary)
-    unsigned char *hTables = new unsigned char[(_tab_rows>>1)+1](); // (2*_tab_rows)/4+1
-    ULLONG *hashValues = new ULLONG[max_bucket_size<<1]; // 2*max_bucket_size
-    ULLONG *h0coeffs = nullptr, *h1coeffs = nullptr;
-    bool goodPair;
-    ULLONG x, bucket_size;
-    unsigned short num_of_tries_goodpairs;
+    ULLONG *hashValues = new ULLONG[max_bucket_size << 1];              // array to store hashvalues of keys created by good pair of 1-universal hash function of current bucket
+    unsigned char *hTables = new unsigned char[(_tab_rows >> 1) + 1](); // array to count number of keys with the same hashvalue (by the same hash function)
+    ULLONG *h0coeffs = nullptr;                                         // coefficients of first hash function of current good pair of hash functions
+    ULLONG *h1coeffs = nullptr;                                         // coefficients of second hash function of current good pair of hash functions
+    bool goodPair;                                                      // indicates whether the current pair of hash functions is still considered as good
+    ULLONG x;                                                           // current key
+    ULLONG bucket_size;                                                 // size of current bucket
+    unsigned short num_of_tries_goodpairs;                              // current number of tries to find a good pair (for each bucket)
 
-    _h_coeffs = new ULLONG[(_m*(_l+1))<<1]; // 2*_m*(_l+1)
-    for(ULLONG pairI = 0; pairI < _m; pairI++) {
+    // try to find a good pair of 1-universal hash functions for each bucket
+    _h_coeffs = new ULLONG[(_m * (_l + 1)) << 1];
+    for (ULLONG pairI = 0; pairI < _m; pairI++) {
 
         num_of_tries_goodpairs = 0;
-//        // Debug
-//        cout << "## create good pair for bucket " << pairI << " ##" << endl;
-//        // Debug end
 
-        // TODO Makro?
-        h0coeffs = _h_coeffs + ((pairI * (_l + 1))<<1); // _h_coeffs + 2 * pairI * (_l + 1)
+        // find location to store the coefficients of the good pair of hash functions
+        h0coeffs = _h_coeffs + ((pairI * (_l + 1)) << 1);
         h1coeffs = h0coeffs + _l + 1;
-        // goodPair = true;
-        bucket_size = bucket_offsets[pairI+1]-bucket_offsets[pairI];
+
+        // size of bucket pairI
+        bucket_size = bucket_offsets[pairI + 1] - bucket_offsets[pairI];
 
         // Debug
-        if(_debug_mode) {
+        if (_debug_mode) {
             cout << "Bucket " << pairI << ":" << endl;
             cout << " Need to assign " << bucket_size << " elements to " << _tab_rows << " different values." << endl;
         }
         // Debug end
 
+        // try to find a good pair of 1-universal hash functions for bucket pairI
         do {
             goodPair = true;
             num_of_tries_goodpairs++;
@@ -524,63 +443,59 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
             stats.goodpairs_total_tries++;
             // Stats end
 
+            // guess an new pair of hash function
             _createUhf(h0coeffs, rng, dist);
             _createUhf(h1coeffs, rng, dist);
-            // counting
-            //for(ULLONG j = 0; j < bucket_sizes[pairI]; j++) {
-            for(ULLONG j = 0; j < bucket_size; j++) {
+
+            // counting (for each hash function separately): how many keys have a specific hashvalue
+            for (ULLONG j = 0; j < bucket_size; j++) {
                 // compute hashvalues
-                //x = bucket_data[pairI][j];
-                x = bucket_data->getValue(bucket_offsets[pairI]+j);
+                x = bucket_data->getValue(bucket_offsets[pairI] + j);
                 ARR(hashValues, bucket_size, 2, j, 0) = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_rows);
                 ARR(hashValues, bucket_size, 2, j, 1) = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_rows);
                 // count hashvalues
-                if(GETBITPAIR(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0)) < 2) {
-                    INCBITPAIR(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0));
+                if (GETTABBITPAIR(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0)) < 2) {
+                    INCTABBITPAIR(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0));
                 }
-                if(GETBITPAIR(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1)) < 2) {
-                    INCBITPAIR(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1));
+                if (GETTABBITPAIR(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1)) < 2) {
+                    INCTABBITPAIR(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1));
                 }
             }
-            // evaluation
-            for(ULLONG j = 0; j < bucket_size && goodPair; j++) {
+            // evaluation: does every key has at least one unique hashvalue by a specific hash function?
+            for (ULLONG j = 0; j < bucket_size && goodPair; j++) {
                 // TODO &&
-                if (GETBITPAIR(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0)) == 2) {
-                    if (GETBITPAIR(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1)) == 2) {
-                        // pair not good
+                if ((GETTABBITPAIR(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0)) == 2)
+                    && (GETTABBITPAIR(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1)) == 2)) {
+                        // pair of hash functions is not good
                         goodPair = false;
-                    }
                 }
             }
-            // clear hTables for counting
+            // clear hTables for new counting
             // TODO without condition?
-            if(pairI < _m-1 || !goodPair) {
-                for(ULLONG j = 0; j < bucket_size; j++) {
-                    ZEROBITPAIRS(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0));
-                    ZEROBITPAIRS(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1));
+            if (pairI < _m - 1 || !goodPair) {
+                for (ULLONG j = 0; j < bucket_size; j++) {
+                    ZEROTABBITPAIRS(hTables, ARR(hashValues, bucket_size, 2, j, 0));
+                    ZEROTABBITPAIRS(hTables, ARR(hashValues, bucket_size, 2, j, 1));
                 }
             }
+        } while (!goodPair && num_of_tries_goodpairs < config.num_of_tries_goodpairs);
 
-//            // Debug
-//            if(!goodPair) {
-//                cout << "rerun" << endl;
-//            }
-//            // Debug end
-        } while(!goodPair && num_of_tries_goodpairs < config.num_of_tries_goodpairs);
-
-        if(!goodPair) {
+        // no good pair of hash function found for bucket pairI
+        if (!goodPair) {
             // Debug
-            if(_debug_mode) {
+            if (_debug_mode) {
                 cout << " Could not create good pair of universal hash functions for bucket " << pairI
-                     << " within " << num_of_tries_goodpairs << " tries." << endl;
+                << " within " << num_of_tries_goodpairs << " tries." << endl;
             }
             // Debug end
+            delete[] hTables;
+            delete[] hashValues;
             // TODO
             throw 0;
         }
 
         // Debug
-        if(_debug_mode) {
+        if (_debug_mode) {
             cout << " Good pair " << pairI << " created within " << num_of_tries_goodpairs << " tries." << endl;
         }
         // Debug end
@@ -589,33 +504,37 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
     delete[] hashValues;
 }
 
-void PerfectHashFunction::_createRandomTables(mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
-    //TODO check this method!
-    for(int i = 0; i < 6*_tab_rows; i++) {
+void PerfectHashFunction::_createRandomTables(mt19937 *rng, uniform_int_distribution<ULLONG> *dist) {
+    for (int i = 0; i < 6 * _tab_rows; i++) {
         _random_table[i] = (*dist)(*rng);
     }
 }
 
-void PerfectHashFunction::_createRandomFactor(ULLONG bucket_num, mt19937* rng, uniform_int_distribution<ULLONG>* dist) {
-    //TODO check this method!
+void PerfectHashFunction::_createRandomFactor(ULLONG bucket_num, mt19937 *rng, uniform_int_distribution<ULLONG> *dist) {
     _random_factor[bucket_num] = (*dist)(*rng);
 }
 
 void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test_array,
                                       InputData *bucket_data, ULLONG bucket_offset, ULLONG bucket_size) {
     //TODO check this method!
-    ULLONG h0value, h1value, fi0, fi1, fi2;
-    ULLONG *h0coeffs = _h_coeffs + ((bucket_num * (_l + 1))<<1); // _h_coeffs + 2 * bucket_num * (_l + 1)
-    ULLONG *h1coeffs = h0coeffs + _l + 1;
-    ULLONG x;
-    ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
-    for(ULLONG k = 0; k < bucket_size; k++) {
-        //x = bucket[k];
-        x = bucket_data->getValue(bucket_offset+k);
+    ULLONG h0value; // hash value of first hash function of current good pair of hash functions
+    ULLONG h1value; // hash value of second hash function of current good pair of hash functions
+    ULLONG fi0;     // first possible hash value for (perfect) bucket hash function
+    ULLONG fi1;     // second possible hash value for (perfect) bucket hash function
+    ULLONG fi2;     // third possible hash value for (perfect) bucket hash function
+    ULLONG *h0coeffs = _h_coeffs + ((bucket_num * (_l + 1)) << 1);  // coefficients of first hash function of current good pair of hash functions
+    ULLONG *h1coeffs = h0coeffs + _l + 1;                           // coefficients of second hash function of current good pair of hash functions
+    ULLONG x;       // current key
+    ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];      // range of (perfect) bucket hash function
+
+    // compute three hash values for each key and construct a 3-graph (stored in acyclicity_test_array)
+    for (ULLONG k = 0; k < bucket_size; k++) {
+        // compute hash values of good pair of 1-universal hash functions
+        x = bucket_data->getValue(bucket_offset + k);
         h0value = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_rows);
         h1value = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_rows);
 
-        //compute the values of the fij(x)
+        // compute the values fij(x)
         fi0 = ((ARR(_random_table, _tab_rows, 6, h0value, 0) * _random_factor[bucket_num])
                ^ (ARR(_random_table, _tab_rows, 6, h1value, 1))) % mi;
         fi1 = ((ARR(_random_table, _tab_rows, 6, h0value, 2) * _random_factor[bucket_num])
@@ -623,33 +542,23 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
         fi2 = ((ARR(_random_table, _tab_rows, 6, h0value, 4) * _random_factor[bucket_num])
                ^ (ARR(_random_table, _tab_rows, 6, h1value, 5))) % (mi - 2);
 
-        //compute the values of the gij(x)
-        if(fi1 >= fi0) {
+        // compute the pairwise distinct values gij(x) as possible results of the (perfect) bucket hash function
+        if (fi1 >= fi0) {
             fi1++;
         }
-//        if(fi2 >= fi0) {
-//            if(fi2 >= fi1) {
-//                fi2 += 2;
-//            } else {
-//                fi2++;
-//            }
-//        } else if(fi2 >= fi1) {
-//            fi2++;
-//        }
-        // first version not equivalent / not correct
-        if(fi2 >= fi0) {
+        if (fi2 >= fi0) {
             fi2++;
-            if(fi2 >= fi1) {
+            if (fi2 >= fi1) {
                 fi2++;
             }
-        } else if(fi2 >= fi1) {
+        } else if (fi2 >= fi1) {
             fi2++;
-            if(fi2 >= fi0) {
+            if (fi2 >= fi0) {
                 fi2++;
             }
         }
 
-        //save the values in the array
+        // construct the 3-graph by adding the edge (fi0, fi1, fi2)
         ARR(acyclicity_test_array, bucket_size, 3, k, 0) = fi0;
         ARR(acyclicity_test_array, bucket_size, 3, k, 1) = fi1;
         ARR(acyclicity_test_array, bucket_size, 3, k, 2) = fi2;
@@ -657,46 +566,29 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 }
 
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
-    //TODO check this method!
+    // TODO check this method!
     // TODO new for queue, removed and visited after first loop?
-    ULLONG max_length = 2*ceil(log2(bucket_size))+1; // TODO <<1 ??? (after cast?)
-    ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];
-    ULLONG *edgesOf = new ULLONG[max_length * mi]();
-    ULLONG *cEdgesOf = new ULLONG[mi]();
-    ULLONG gValue, edge_index, u;
-    ULLONG *queue = new ULLONG[bucket_size];
-    ULLONG next_queue_index = 0;
-    unsigned char *removed = new unsigned char[(bucket_size >> 3) + 1]();
-    unsigned char *visited = new unsigned char[(mi >> 3) + 1]();
-    int c, sum;
+    ULLONG max_length = 2 * (ULLONG) ceil(log2(bucket_size)) + 1;   // maximal number of edges that a node is allowed to be incident to (very unlikely to be exceeded)
+    ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];      // number of nodes of the 3-graph = range of the bucket hash function
+    ULLONG *edgesOf = new ULLONG[max_length * mi]();                // array to store the incident edges of each node
+    ULLONG *cEdgesOf = new ULLONG[mi]();                            // array to count the number of incident edges of each node
+    ULLONG gValue;                                                  // node of the 3-graph = (possible) hashvalue of the bucket hash function
+    ULLONG edge_index;                                              // index of an edge of the 3-graph = index of a key of the bucket
+    ULLONG *queue = nullptr;                                        // stores all edges (keys) that have been removed from the 3-graph in order to test for acyclicity
+    ULLONG next_queue_index = 0;                                    // number of already removed edges
+    unsigned char *removed = nullptr;                               // bitmap that stores information if an edge has been removed
+    unsigned char *visited = nullptr;                               // bitmap that stores information if a nodes has been visited already
+    ULLONG u;                                                       // stores a newly visited node in the construction phase of the _g array
+    int c, sum;                                                     // variables to compute the correct value for the _g array for each key (edge)
 
-//    // Debug
-//    cout << "Check new 3-graph with " << bucket_size << " edges and "
-//         << _offset[bucket_num+1]-_offset[bucket_num] << " nodes" << endl;
-//    cout << "list of edges:" << endl;
-//    for(ULLONG ii = 0; ii < bucket_size; ii++) {
-//        cout << "\t";
-//        for(ULLONG jj = 0; jj < 3; jj++) {
-//            cout << ARR(acyclicity_test_array, bucket_offsets[i+1]-bucket_offsets[i], 3, ii, jj) << " ";
-//        }
-//        cout << endl;
-//    }
-//    // Debug end
-
-    //construct a list of adjacent edges of each node
-    for(ULLONG j = 0; j < bucket_size; j++) {
-        for(int k = 0; k < 3; k++) {
+    // construct a list of incident edges of each node
+    for (ULLONG j = 0; j < bucket_size; j++) {
+        for (int k = 0; k < 3; k++) {
             gValue = ARR(acyclicity_test_array, bucket_size, 3, j, k);
-            if(cEdgesOf[gValue] >= max_length) { //an overflow here
-//                // Debug
-//                cout << "node " << gValue << " has more than " << max_length << " edges" << endl;
-//                cout << "creation not successful" << endl;
-//                // Debug end
+            // abort if node gValue has too many incident edges
+            if (cEdgesOf[gValue] >= max_length) {
                 delete[] edgesOf;
                 delete[] cEdgesOf;
-                delete[] queue;
-                delete[] removed;
-                delete[] visited;
                 return true; //TODO is this right?
             }
             ARR(edgesOf, mi, max_length, gValue, cEdgesOf[gValue]) = j;
@@ -704,83 +596,42 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
         }
     }
 
-//    // Debug
-//    cout << "list of adjacent edges:" << endl;
-//    for(ULLONG nodeindex = 0; nodeindex < mi; nodeindex++) {
-//        cout << "\tnode " << nodeindex << " with " << cEdgesOf[nodeindex] << " edges:";
-//        for(int edgeindex = 0; edgeindex < cEdgesOf[nodeindex]; edgeindex++) {
-//            cout << " " << ARR(edgesOf, mi, max_length, nodeindex, edgeindex);
-//        }
-//        cout << endl;
-//    }
-//    // Debug end
-
-    //now check for acyclicity
-    for(ULLONG j = 0; j < mi; j++) {
-        if(cEdgesOf[j] == 1) {
+    // check for acyclicity
+    queue = new ULLONG[bucket_size];
+    removed = new unsigned char[(bucket_size >> 3) + 1]();
+    // check for each node (hashvalue)
+    for (ULLONG j = 0; j < mi; j++) {
+        // if the current node has only one remaining incident edge (only one remaining key has this hashvalue)
+        if (cEdgesOf[j] == 1) {
+            // remove the edge (key) (if possible) and check the nodes (hashvalues) (formerly) incident to the removed edge
             edge_index = ARR(edgesOf, mi, max_length, j, 0);
-//            // Debug
-//            cout << "edge " << edge_index << " already removed? " << GETBIT(removed, edge_index) << endl;
-//            cout << "repeat " << GETBIT(removed, edge_index) << endl;
-//            // Debug end
-            if(!GETBIT(removed, edge_index)) {
-//                // Debug
-//                cout << "remove edge " << edge_index << endl;
-//                // Debug end
+            if (!GETBIT(removed, edge_index)) {
                 _peelOf(edge_index, j, acyclicity_test_array, bucket_size, queue, next_queue_index, edgesOf,
-                       cEdgesOf, max_length, mi, removed);
+                        cEdgesOf, max_length, mi, removed);
             }
         }
     }
 
-    if(next_queue_index != bucket_size) {
-//        // Debug
-//        if(_debug_mode) {
-//            cout << "bucket " << bucket_num << ": not acyclic" << endl;
-//        }
-//        // Debug end
+    // abort if there are still some edges (keys) that have not been removed (incident nodes are incident to at least one other edge)
+    // i.e. abort if the 3-graph is not acyclic
+    if (next_queue_index != bucket_size) {
         delete[] edgesOf;
         delete[] cEdgesOf;
         delete[] queue;
         delete[] removed;
-        delete[] visited;
         return true;
     }
 
-//    // Debug
-//    if(_debug_mode) {
-//        cout << "bucket " << bucket_num << ": acyclic" << endl;
-//    }
-//    // Debug end
-//    // Debug
-//    cout << "list of adjacent edges:" << endl;
-//    for(ULLONG nodeindex = 0; nodeindex < mi; nodeindex++) {
-//        cout << "\tnode " << nodeindex << " with " << cEdgesOf[nodeindex] << " edges:";
-//        for(int edgeindex = 0; edgeindex < cEdgesOf[nodeindex]; edgeindex++) {
-//            cout << " " << ARR(edgesOf, mi, max_length, nodeindex, edgeindex);
-//        }
-//        cout << endl;
-//    }
-//    // Debug end
-
-    //now assign the values
-    for(ULLONG u = _offset[bucket_num]; u < _offset[bucket_num + 1]; u++) { // TODO u umbenennen oder ohne ULLONG
-        SETCHARBITPAIR(_g, u, 0);
+    // now assign the necessary values to _g in order to transform the acyclic 3-graph into a perfect hash function
+    visited = new unsigned char[(mi >> 3) + 1]();
+    for (ULLONG v = _offset[bucket_num]; v < _offset[bucket_num + 1]; v++) { // TODO u umbenennen oder ohne ULLONG
+        SETCHARBITPAIR(_g, v, 0);
     }
-
-//    // Debug
-//    cout << "g values for bucket " << bucket_num << " zeroed:" << endl;
-//    for(ULLONG ii = _offset[bucket_num]; ii < _offset[bucket_num + 1]; ii++) {
-//        cout << " " << GETCHARBITPAIR(_g, ii);
-//    }
-//    cout << endl;
-//    // Debug end
-
-    for(ULLONG j = next_queue_index - 1; j < next_queue_index; j--) {
+    for (ULLONG j = next_queue_index - 1; j < next_queue_index; j--) {
         sum = 0;
-        for(int k = 2; k >= 0; k--) {
+        for (int k = 2; k >= 0; k--) {
             gValue = ARR(acyclicity_test_array, bucket_size, 3, queue[j], k);
-            if(!GETBIT(visited, gValue)) {
+            if (!GETBIT(visited, gValue)) {
                 u = gValue;
                 SETBIT(visited, gValue, 1);
                 c = k;
@@ -788,17 +639,8 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
                 sum += GETCHARBITPAIR(_g, _offset[bucket_num] + gValue);
             }
         }
-        //SETCHARBITPAIR(_g, _offset[bucket_num] + u, (c - sum) % 3);
         SETCHARBITPAIR(_g, _offset[bucket_num] + u, (3 + c - (sum % 3)) % 3);
     }
-
-//    // Debug
-//    cout << "g values for bucket " << bucket_num << ":" << endl;
-//    for(ULLONG ii = _offset[bucket_num]; ii < _offset[bucket_num + 1]; ii++) {
-//        cout << " " << GETCHARBITPAIR(_g, ii);
-//    }
-//    cout << endl;
-//    // Debug end
 
     delete[] edgesOf;
     delete[] cEdgesOf;
@@ -812,116 +654,39 @@ void PerfectHashFunction::_peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG
                                   ULLONG bucket_size, ULLONG *queue, ULLONG &next_queue_index, ULLONG *edgesOf,
                                   ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, unsigned char *removed) {
     // TODO check this method
-    ULLONG gValue, next_edge;
+    ULLONG gValue;      // node of the 3-graph = (possible) hashvalue of the bucket hash function
+    ULLONG next_edge;   // index of an edge of the 3-graph = index of a key of the bucket
 
-    //mark the edge as removed
+    // mark the edge as removed
     SETBIT(removed, edge_index, 1);
     queue[next_queue_index] = edge_index;
     next_queue_index++;
 
-    //remove the edge from all incident nodes
-    for(int k = 0; k < 3; k++) {
+    // remove the edge from all incident nodes and do recursion in these nodes (if needed)
+    for (int k = 0; k < 3; k++) {
+        // node component number k (of 3) of the edge
         gValue = ARR(acyclicity_test_array, bucket_size, 3, edge_index, k);
-        if(gValue != vertex_index) {
-            for(ULLONG l = 0; l < cEdgesOf[gValue]; l++) {
-                if(ARR(edgesOf, mi, max_length, gValue, l) == edge_index) {
-                    ARR(edgesOf, mi, max_length, gValue, l) = ARR(edgesOf, mi, max_length, gValue, cEdgesOf[gValue] - 1);
+        // check if this node component is not the node from the function call
+        if (gValue != vertex_index) {
+            // remove the edge from the list of incident edges
+            for (ULLONG l = 0; l < cEdgesOf[gValue]; l++) {
+                if (ARR(edgesOf, mi, max_length, gValue, l) == edge_index) {
+                    ARR(edgesOf, mi, max_length, gValue, l) = ARR(edgesOf, mi, max_length, gValue,
+                                                                  cEdgesOf[gValue] - 1);
                     cEdgesOf[gValue]--;
                     break;
                 }
             }
-
-            //now do recursion on these nodes, if needed
-            if(cEdgesOf[gValue] == 1) { //TODO: maybe we need to do this in a new loop
+            // now do recursion on this node if he has only one remaining incident edge
+            if (cEdgesOf[gValue] == 1) {
                 next_edge = ARR(edgesOf, mi, max_length, gValue, 0);
-                if(!GETBIT(removed, next_edge)) {
-//                    // Debug
-//                    cout << "remove edge " << next_edge << endl;
-//                    // Debug end
+                if (!GETBIT(removed, next_edge)) {
                     _peelOf(next_edge, gValue, acyclicity_test_array, bucket_size, queue, next_queue_index, edgesOf,
-                           cEdgesOf, max_length, mi, removed);
+                            cEdgesOf, max_length, mi, removed);
                 }
             }
         }
     }
-}
-
-ULLONG PerfectHashFunction::evaluate(ULLONG x) {
-    // TODO check this method
-    ULLONG i, h0value, h1value, g0value, g1value, g2value, mi;
-    ULLONG *h0coeffs = nullptr, *h1coeffs = nullptr;
-    int sum;
-
-    //find the bucket
-    i = _evalUhf(x, _h_split_coeffs, _h_split_mod_mask, _m);
-    h0coeffs = _h_coeffs + ((i * (_l + 1))<<1); // _h_coeffs + 2 * i * (_l + 1)
-    h1coeffs = h0coeffs + _l + 1;
-    mi = _offset[i+1] - _offset[i];
-
-    //compute the values of hij(x)
-    h0value = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_rows);
-    h1value = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_rows);
-
-    //compute the values of fij(x)
-    //consider that we're adding the offset here as we need this later multiple times
-    g0value = (((ARR(_random_table, _tab_rows, 6, h0value, 0) * _random_factor[i])
-           ^ (ARR(_random_table, _tab_rows, 6, h1value, 1))) % mi) + _offset[i];
-    g1value = (((ARR(_random_table, _tab_rows, 6, h0value, 2) * _random_factor[i])
-           ^ (ARR(_random_table, _tab_rows, 6, h1value, 3))) % (mi - 1)) + _offset[i];
-    g2value = (((ARR(_random_table, _tab_rows, 6, h0value, 4) * _random_factor[i])
-           ^ (ARR(_random_table, _tab_rows, 6, h1value, 5))) % (mi - 2)) + _offset[i];
-
-    //compute the values of the gij(x)
-    if(g1value >= g0value) {
-        g1value++;
-    }
-//    if(g2value >= g0value) {
-//        if(g2value >= g1value) {
-//            g2value += 2;
-//        } else {
-//            g2value++;
-//        }
-//    } else if(g2value >= g1value) {
-//        g1value++;
-//    }
-    // first version not equivalent / not correct
-    if(g2value >= g0value) {
-        g2value++;
-        if(g2value >= g1value) {
-            g2value++;
-        }
-    } else if(g2value >= g1value) {
-        g2value++;
-        if(g2value >= g0value) {
-            g2value++;
-        }
-    }
-
-    //now compute the real hash value
-    sum = (GETCHARBITPAIR(_g, g0value) + GETCHARBITPAIR(_g, g1value) + GETCHARBITPAIR(_g, g2value)) % 3;
-
-    switch(sum) {
-        case 0:
-            return g0value;
-        case 1:
-            return g1value;
-        default: //value 2
-            return g2value;
-    }
-}
-
-void PerfectHashFunction::_clear() {
-    // TODO check this method
-    delete[] _offset;
-    delete[] _h_split_coeffs;
-    delete[] _h_coeffs;
-    delete[] _random_table;
-    delete[] _random_factor;
-    delete[] _g;
-}
-
-ULLONG PerfectHashFunction::getRange() {
-    return _offset[_m];
 }
 
 void PerfectHashFunction::_computeSizes(Statistics &stats) {
@@ -939,17 +704,91 @@ void PerfectHashFunction::_computeSizes(Statistics &stats) {
                           + stats.size_in_bytes_g_array;
 
     stats.compact_size_in_bytes_general = 2 * sizeof(unsigned short);
-    stats.compact_size_in_bytes_split_uhf = 2 * sizeof(ULLONG) + (ULLONG) ceil((long double)((_l + 1) * log2(_h_split_mod_mask+1)) / 8.0l);
+    stats.compact_size_in_bytes_split_uhf =
+            2 * sizeof(ULLONG) + (ULLONG) ceil((long double) ((_l + 1) * log2(_h_split_mod_mask + 1)) / 8.0l);
     stats.compact_size_in_bytes_offsets = (_m + 1) * sizeof(ULLONG);
-    stats.compact_size_in_bytes_good_uhf_pairs = 2 * sizeof(ULLONG) + (ULLONG) ceil((long double)((2 * _m * (_l + 1)) * log2(_h_mod_mask+1)) / 8.0l);
+    stats.compact_size_in_bytes_good_uhf_pairs =
+            2 * sizeof(ULLONG) + (ULLONG) ceil((long double) ((2 * _m * (_l + 1)) * log2(_h_mod_mask + 1)) / 8.0l);
     stats.compact_size_in_bytes_random_width = sizeof(unsigned short);
-    stats.compact_size_in_bytes_random_table = (ULLONG) ceil((long double)(6 * _tab_rows * _tab_width) / 8.0l);
-    stats.compact_size_in_bytes_random_factor = (ULLONG) ceil((long double)(_m * _tab_width) / 8.0l);
+    stats.compact_size_in_bytes_random_table = (ULLONG) ceil((long double) (6 * _tab_rows * _tab_width) / 8.0l);
+    stats.compact_size_in_bytes_random_factor = (ULLONG) ceil((long double) (_m * _tab_width) / 8.0l);
     stats.compact_size_in_bytes_g_array = ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
     stats.compact_size_in_bytes = stats.compact_size_in_bytes_general + stats.compact_size_in_bytes_offsets
-                          + stats.compact_size_in_bytes_split_uhf + stats.compact_size_in_bytes_good_uhf_pairs
-                          + stats.compact_size_in_bytes_random_width + stats.compact_size_in_bytes_random_table
-                          + stats.compact_size_in_bytes_random_factor + stats.compact_size_in_bytes_g_array;
+                                  + stats.compact_size_in_bytes_split_uhf + stats.compact_size_in_bytes_good_uhf_pairs
+                                  + stats.compact_size_in_bytes_random_width + stats.compact_size_in_bytes_random_table
+                                  + stats.compact_size_in_bytes_random_factor + stats.compact_size_in_bytes_g_array;
+}
+
+void PerfectHashFunction::_clear() {
+    delete[] _offset;
+    delete[] _h_split_coeffs;
+    delete[] _h_coeffs;
+    delete[] _random_table;
+    delete[] _random_factor;
+    delete[] _g;
+}
+
+ULLONG PerfectHashFunction::evaluate(ULLONG x) {
+    ULLONG i;                   // bucket number for key x
+    ULLONG mi;                  // offset of range of bucket i
+    ULLONG *h0coeffs = nullptr; // coefficients of first hash function of good pair of hash functions of bucket i
+    ULLONG *h1coeffs = nullptr; // coefficients of second hash function of good pair of hash functions of bucket i
+    ULLONG h0value;             // hash value of first hash function of good pair of hash functions of bucket i
+    ULLONG h1value;             // hash value of second hash function of good pair of hash functions of bucket i
+    ULLONG g0value;             // first possible hash value of perfect bucket hash function
+    ULLONG g1value;             // second possible hash value of perfect bucket hash function
+    ULLONG g2value;             // third possible hash value of perfect bucket hash function
+    int sum;                    // variable to determine the correct hash value of the perfect bucket hash function
+
+    // find the bucket, its good pair of hash function and the offset of its range
+    i = _evalUhf(x, _h_split_coeffs, _h_split_mod_mask, _m);
+    h0coeffs = _h_coeffs + ((i * (_l + 1)) << 1); // _h_coeffs + 2 * i * (_l + 1)
+    h1coeffs = h0coeffs + _l + 1;
+    mi = _offset[i + 1] - _offset[i];
+
+    // compute the values hij(x)
+    h0value = _evalUhf(x, h0coeffs, _h_mod_mask, _tab_rows);
+    h1value = _evalUhf(x, h1coeffs, _h_mod_mask, _tab_rows);
+
+    // compute the values fij(x)
+    // consider that we're adding the offset here as we need this later multiple times
+    g0value = (((ARR(_random_table, _tab_rows, 6, h0value, 0) * _random_factor[i])
+                ^ (ARR(_random_table, _tab_rows, 6, h1value, 1))) % mi) + _offset[i];
+    g1value = (((ARR(_random_table, _tab_rows, 6, h0value, 2) * _random_factor[i])
+                ^ (ARR(_random_table, _tab_rows, 6, h1value, 3))) % (mi - 1)) + _offset[i];
+    g2value = (((ARR(_random_table, _tab_rows, 6, h0value, 4) * _random_factor[i])
+                ^ (ARR(_random_table, _tab_rows, 6, h1value, 5))) % (mi - 2)) + _offset[i];
+
+    // compute the values gij(x)
+    if (g1value >= g0value) {
+        g1value++;
+    }
+    if (g2value >= g0value) {
+        g2value++;
+        if (g2value >= g1value) {
+            g2value++;
+        }
+    } else if (g2value >= g1value) {
+        g2value++;
+        if (g2value >= g0value) {
+            g2value++;
+        }
+    }
+
+    // compute the real hash value
+    sum = (GETCHARBITPAIR(_g, g0value) + GETCHARBITPAIR(_g, g1value) + GETCHARBITPAIR(_g, g2value)) % 3;
+    switch (sum) {
+        case 0:
+            return g0value;
+        case 1:
+            return g1value;
+        default: // sum == 2
+            return g2value;
+    }
+}
+
+ULLONG PerfectHashFunction::getRange() {
+    return _offset[_m];
 }
 
 ULLONG PerfectHashFunction::getSizeInBytes() {
@@ -967,9 +806,9 @@ ULLONG PerfectHashFunction::getCompactSizeInBytes() {
     ULLONG size;
     size = 3 * sizeof(unsigned short) + 4 * sizeof(ULLONG);
     size += (_m + 1) * sizeof(ULLONG);
-    size += (ULLONG) ceil((long double)((_l + 1) * log2(_h_split_mod_mask+1)) / 8.0l);
-    size += (ULLONG) ceil((long double)((2 * _m * (_l + 1)) * log2(_h_mod_mask+1)) / 8.0l);
-    size += (ULLONG) ceil((long double)((6 * _tab_rows + _m) * _tab_width) / 8.0l);
+    size += (ULLONG) ceil((long double) ((_l + 1) * log2(_h_split_mod_mask + 1)) / 8.0l);
+    size += (ULLONG) ceil((long double) ((2 * _m * (_l + 1)) * log2(_h_mod_mask + 1)) / 8.0l);
+    size += (ULLONG) ceil((long double) ((6 * _tab_rows + _m) * _tab_width) / 8.0l);
     size += ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
     return size;
 }
