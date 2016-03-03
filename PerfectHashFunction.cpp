@@ -312,8 +312,7 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
     ULLONG *bucket_sizes = new ULLONG[_m]();        // bucket_sizes[i] == number of keys sorted into bucket i by h_split
     ULLONG hv;                                      // some hash value h_split(key)
     ULLONG mi_1;                                    // for computation of max_mi and _offset
-    ULLONG bucketOverflowSize = max((ULLONG) floor(sqrt(data_length)),
-                                    (ULLONG) 40);   // size of a bucket that is not small anymore
+    ULLONG bucketOverflowSize = max((ULLONG) floor(sqrt(data_length)), (ULLONG) 40);   // size of a bucket that is not small anymore
     ULLONG value;                                   // temporary value from data stream (key)
 
     // Debug
@@ -417,10 +416,8 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
                                            ULLONG max_bucket_size, mt19937 *rng, uniform_int_distribution<ULLONG> *dist,
                                            Statistics &stats) {
     // TODO debug following code (if necessary)
-    ULLONG *hashValues = new ULLONG[max_bucket_size <<
-                                    1];              // array to store hashvalues of keys created by good pair of 1-universal hash function of current bucket
-    unsigned char *hTables = new unsigned char[(_tab_rows >> 1) +
-                                               1](); // array to count number of keys with the same hashvalue (by the same hash function)
+    ULLONG *hashValues = new ULLONG[max_bucket_size << 1];              // array to store hashvalues of keys created by good pair of 1-universal hash function of current bucket
+    unsigned char *hTables = new unsigned char[(_tab_rows >> 1) + 1](); // array to count number of keys with the same hashvalue (by the same hash function)
     ULLONG *h0coeffs = nullptr;                                         // coefficients of first hash function of current good pair of hash functions
     ULLONG *h1coeffs = nullptr;                                         // coefficients of second hash function of current good pair of hash functions
     bool goodPair;                                                      // indicates whether the current pair of hash functions is still considered as good
@@ -540,10 +537,8 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
     ULLONG fi0;     // first possible hash value for (perfect) bucket hash function
     ULLONG fi1;     // second possible hash value for (perfect) bucket hash function
     ULLONG fi2;     // third possible hash value for (perfect) bucket hash function
-    ULLONG *h0coeffs = _h_coeffs + ((bucket_num * (_l + 1)) <<
-                                    1);  // coefficients of first hash function of current good pair of hash functions
-    ULLONG *h1coeffs = h0coeffs + _l +
-                       1;                           // coefficients of second hash function of current good pair of hash functions
+    ULLONG *h0coeffs = _h_coeffs + ((bucket_num * (_l + 1)) << 1);  // coefficients of first hash function of current good pair of hash functions
+    ULLONG *h1coeffs = h0coeffs + _l + 1;                           // coefficients of second hash function of current good pair of hash functions
     ULLONG x;       // current key
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];      // range of (perfect) bucket hash function
 
@@ -588,10 +583,8 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
     // TODO check this method!
     // TODO new for queue, removed and visited after first loop?
-    ULLONG max_length = 2 * (ULLONG) ceil(log2(bucket_size)) +
-                        1;   // maximal number of edges that a node is allowed to be incident to (very unlikely to be exceeded)
-    ULLONG mi = _offset[bucket_num + 1] -
-                _offset[bucket_num];      // number of nodes of the 3-graph = range of the bucket hash function
+    ULLONG max_length = 2 * (ULLONG) ceil(log2(bucket_size)) + 1;   // maximal number of edges that a node is allowed to be incident to (very unlikely to be exceeded)
+    ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];      // number of nodes of the 3-graph = range of the bucket hash function
     ULLONG *edgesOf = new ULLONG[max_length * mi]();                // array to store the incident edges of each node
     ULLONG *cEdgesOf = new ULLONG[mi]();                            // array to count the number of incident edges of each node
     ULLONG gValue;                                                  // node of the 3-graph = (possible) hashvalue of the bucket hash function

@@ -23,12 +23,12 @@ private:
     int _size;
 
     /**
-     * The amount of the items in the data stream.
+     * The number of the items in the data stream.
      */
     ULLONG _length;
 
     /**
-     * The count of ticks used for operations in this class.
+     * The number of ticks used for operations in this class.
      */
     clock_t _evalTime;
 
@@ -36,67 +36,67 @@ public:
     /**
      * Constructor of this class. This method opens the file with the given name.
      *
-     * @param fileName The name of the file to open here
-     * @param flags    The flags for opening the file
-     * @see   ios::openmode
+     * @param[in] fileName The name of the file to open here
+     * @param[in] flags    The flags for opening the file
+     * @see       ios::openmode
      */
     InputData(std::string fileName, ios::openmode flags = ios::in | ios::out);
 
     /**
      * Constructor of this class. This method creates a temporary file.
      *
-     * @param flags The flags for opening the file
-     * @see   ios::openmode
+     * @param[in] flags The flags for opening the file
+     * @see       ios::openmode
      */
-    InputData(ios::openmode flags = ios::in | ios::out); //construct a temporary file
+    InputData(ios::openmode flags = ios::in | ios::out);
 
     /**
      * Inserts an item on the given position in the file.
      *
-     * @param value    The value to insert into the file
-     * @param position The position in the file
+     * @param[in] value    The value to insert into the file
+     * @param[in] position The position in the file
      */
     void setValue(ULLONG value, ULLONG position);
 
     /**
      * Inserts an item on the position following on the last writing action.
      *
-     * @param value The value to insert into the file
+     * @param[in] value The value to insert into the file
      */
     void setNextValue(ULLONG value);
 
     /**
      * Reads the item on the given position from the file.
      *
-     * @param  position The position of the item in file
-     * @return          The value of the item
+     * @param[in]  position The position of the item in file
+     * @return              The value of the item
      */
     ULLONG getValue(ULLONG position);
 
     /**
      * Reads the item on the position following on the last reading action.
      *
-     * @param  position The position of the item in file
-     * @return          The value of the item
+     * @param[in]  position The position of the item in file
+     * @return              The value of the item
      */
     ULLONG getNextValue();
 
     /**
-     * Returns the amount of items that are saved in this file.
+     * Returns the number of items that are saved in this file.
      *
-     * @return The amount of items
+     * @return The number of items
      */
     ULLONG getLength();
 
     /**
-     * Returns the amount of ticks that are utilized for operations on this file.
+     * Returns the number of ticks that are utilized for operations on this file.
      *
-     * @return The amount of ticks
+     * @return The number of ticks
      */
     clock_t getEvalTime();
 
     /**
-     * Resets the amount of ticks.
+     * Resets the number of ticks.
      */
     void resetEvalTime();
 
