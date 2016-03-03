@@ -71,11 +71,6 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     _h_split_coeffs = new ULLONG[_l + 1];
     do {
         num_of_tries_split++;
-        // Debug
-        if (_debug_mode) {
-            cout << "Split no. " << num_of_tries_split << endl;
-        }
-        // Debug end
         // guess an new split hash function
         _createUhf(_h_split_coeffs, rng, dist_h_split_coeffs);
         // try to split the set of keys into small buckets (in temporary file)
@@ -87,7 +82,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     if (!split_successful) {
         // Debug
         if (_debug_mode) {
-            cout << "Could not split data within " << num_of_tries_split << " tries." << endl;
+            cout << "\nCould not split data within " << num_of_tries_split << " tries." << endl;
         }
         // Debug end
         delete bucket_data;
@@ -100,7 +95,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 
     // Debug
     if (_debug_mode) {
-        cout << "Could split data within " << num_of_tries_split << " tries." << endl;
+        cout << "\nCould split data within " << num_of_tries_split << " tries." << endl;
         cout << "Created " << _m << " buckets with <= " << max_bucket_size << " elements." << endl;
         cout << "Bucket sizes:" << endl;
         for (ULLONG i = 0; i < _m; i++) {
@@ -140,7 +135,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     // try to create good hash function pairs for all buckets
     try {
         _createGoodPairs(config, bucket_data, bucket_offsets, max_bucket_size, rng, dist_h_coeffs, stats);
-    } catch(int e) {
+    } catch (int e) {
         // abort because creation was not possible
         delete bucket_data;
         delete[] bucket_offsets;
@@ -150,7 +145,6 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
         _clear();
         throw 0;
     }
-
 
     // Debug
     if (_debug_mode) {
@@ -171,6 +165,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     if (_debug_mode) {
         cout << "# Create perfect hash functions for all buckets:" << endl;
     }
+    short percentage = -1;
     // Debug end
 
     // create distribution for shared random values (table and factors)
@@ -192,12 +187,6 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
         stats.random_tab_tries++;
         // Stats end
 
-        // Debug
-        if (_debug_mode) {
-            cout << "Create new random tables (no. " << num_of_tries_tab << ")." << endl;
-        }
-        // Debug end
-
         // create new table with random values
         _createRandomTables(rng, dist_tables);
         badTables = false;
@@ -206,7 +195,10 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
         for (ULLONG i = 0; i < _m; i++) {
             // Debug
             if (_debug_mode) {
-                cout << "Bucket " << i << ":" << endl;
+                if ((i * 100) / _m != percentage) {
+                    percentage = (i * 100) / _m;
+                    cout << "\r " << percentage << "% created." << flush;
+                }
             }
             // Debug end
             num_of_tries_si = 0;
@@ -217,38 +209,17 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
                 // Stats
                 stats.random_si_total_tries++;
                 // Stats end
-                // Debug
-                if (_debug_mode) {
-                    cout << " Create new random factor (no. " << num_of_tries_si << ") for bucket " << i << "." << endl;
-                }
-                // Debug end
                 // create a new random factor
                 _createRandomFactor(i, rng, dist_tables);
-                // Debug
-                if (_debug_mode) {
-                    cout << " Create 3-graph." << endl;
-                }
-                // Debug end
                 // create a 3-graph by computing 3 hash values for each key in the bucket
                 _computeGij(i, acyclicity_test_array, bucket_data, bucket_offsets[i],
                             bucket_offsets[i + 1] - bucket_offsets[i]);
-                // Debug
-                if (_debug_mode) {
-                    cout << " Test 3-graph for acyclicity." << endl;
-                }
-                // Debug end
                 // check if the created 3-graph is acyclic and transform the acyclic 3-graph into a perfect hash function for bucket i
                 badFactor = _isCyclic(i, acyclicity_test_array, bucket_offsets[i + 1] - bucket_offsets[i]);
             } while (badFactor && num_of_tries_si < config.num_of_tries_random_si);
 
             // abort if all random factors were unsuccessful for bucket i, i.e. try a new table with random values
             if (badFactor) {
-                // Debug
-                if (_debug_mode) {
-                    cout << " Could not create acyclic 3-graph for bucket " << i << " within " << num_of_tries_si <<
-                    " tries." << endl;
-                }
-                // Debug end
                 badTables = true;
                 break;
             }
@@ -275,7 +246,8 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     if (badTables) {
         // Debug
         if (_debug_mode) {
-            cout << "Could not create random tables within " << num_of_tries_tab << " tries." << endl;
+            cout << "\nCould not create perfect hash functions within " << num_of_tries_tab <<
+            " tries (new random tables)." << endl;
         }
         // Debug end
         _clear();
@@ -294,6 +266,9 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 
     // Debug
     if (_debug_mode) {
+        cout << "\r 100% created." << endl;
+        cout << "Created perfect hash functions for all " << _m << " buckets within " << num_of_tries_tab <<
+        " tries (new random tables)." << endl;
         cout << "### Perfect Hash Function Creation Successful ###" << endl;
     }
     // Debug end
@@ -341,8 +316,20 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
                                     (ULLONG) 40);   // size of a bucket that is not small anymore
     ULLONG value;                                   // temporary value from data stream (key)
 
+    // Debug
+    short percentage = -1;
+    // Debug end
+
     // counting
     for (ULLONG i = 0; i < data_length; i++) {
+        // Debug
+        if (_debug_mode) {
+            if ((i * 100) / data_length != percentage) {
+                percentage = (i * 100) / data_length;
+                cout << "\r " << percentage << "% counted." << flush;
+            }
+        }
+        // Debug end
         hv = _evalUhf(data->getValue(i), _h_split_coeffs, _h_split_mod_mask, _m);
         if (bucket_sizes[hv] >= bucketOverflowSize) {
             // bucket i overflow (too large)
@@ -352,6 +339,12 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
             bucket_sizes[hv]++;
         }
     }
+
+    // Debug
+    if (_debug_mode) {
+        cout << "\r 100% counted." << flush;
+    }
+    // Debug end
 
     // compute maximal bucket size and offsets (for next segments) for sorted data (bucket_data segments)
     bucket_offsets = new ULLONG[_m + 1]();
@@ -373,13 +366,31 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
     }
     bucket_offsets[_m] = bucket_offsets[_m - 1]; // TODO = data_length
 
+    // Debug
+    percentage = -1;
+    // Debug end
+
     // sort data into buckets (in temporary file)
     for (ULLONG i = data_length - 1; i < data_length; i--) {
+        // Debug
+        if (_debug_mode) {
+            if (((data_length - 1 - i) * 100) / data_length != percentage) {
+                percentage = ((data_length - 1 - i) * 100) / data_length;
+                cout << "\r " << percentage << "% split." << flush;
+            }
+        }
+        // Debug end
         value = data->getValue(i);
         hv = _evalUhf(value, _h_split_coeffs, _h_split_mod_mask, _m);
         bucket_data->setValue(value, bucket_offsets[hv] - 1);
         bucket_offsets[hv]--;
     }
+
+    // Debug
+    if (_debug_mode) {
+        cout << "\r 100% split." << flush;
+    }
+    // Debug end
 
     // compute offsets for ranges of bucket hash functions and maximal range of a bucket hash function
     _offset = new ULLONG[_m + 1];
@@ -406,14 +417,20 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
                                            ULLONG max_bucket_size, mt19937 *rng, uniform_int_distribution<ULLONG> *dist,
                                            Statistics &stats) {
     // TODO debug following code (if necessary)
-    ULLONG *hashValues = new ULLONG[max_bucket_size << 1];              // array to store hashvalues of keys created by good pair of 1-universal hash function of current bucket
-    unsigned char *hTables = new unsigned char[(_tab_rows >> 1) + 1](); // array to count number of keys with the same hashvalue (by the same hash function)
+    ULLONG *hashValues = new ULLONG[max_bucket_size <<
+                                    1];              // array to store hashvalues of keys created by good pair of 1-universal hash function of current bucket
+    unsigned char *hTables = new unsigned char[(_tab_rows >> 1) +
+                                               1](); // array to count number of keys with the same hashvalue (by the same hash function)
     ULLONG *h0coeffs = nullptr;                                         // coefficients of first hash function of current good pair of hash functions
     ULLONG *h1coeffs = nullptr;                                         // coefficients of second hash function of current good pair of hash functions
     bool goodPair;                                                      // indicates whether the current pair of hash functions is still considered as good
     ULLONG x;                                                           // current key
     ULLONG bucket_size;                                                 // size of current bucket
     unsigned short num_of_tries_goodpairs;                              // current number of tries to find a good pair (for each bucket)
+
+    // Debug
+    short percentage = -1;
+    // Debug end
 
     // try to find a good pair of 1-universal hash functions for each bucket
     _h_coeffs = new ULLONG[(_m * (_l + 1)) << 1];
@@ -430,8 +447,10 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
 
         // Debug
         if (_debug_mode) {
-            cout << "Bucket " << pairI << ":" << endl;
-            cout << " Need to assign " << bucket_size << " elements to " << _tab_rows << " different values." << endl;
+            if ((pairI * 100) / _m != percentage) {
+                percentage = (pairI * 100) / _m;
+                cout << "\r " << percentage << "% created." << flush;
+            }
         }
         // Debug end
 
@@ -466,8 +485,8 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
                 // TODO &&
                 if ((GETTABBITPAIR(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0)) == 2)
                     && (GETTABBITPAIR(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1)) == 2)) {
-                        // pair of hash functions is not good
-                        goodPair = false;
+                    // pair of hash functions is not good
+                    goodPair = false;
                 }
             }
             // clear hTables for new counting
@@ -484,7 +503,7 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
         if (!goodPair) {
             // Debug
             if (_debug_mode) {
-                cout << " Could not create good pair of universal hash functions for bucket " << pairI
+                cout << "\nCould not create good pair of universal hash functions for bucket " << pairI
                 << " within " << num_of_tries_goodpairs << " tries." << endl;
             }
             // Debug end
@@ -493,13 +512,12 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
             // TODO
             throw 0;
         }
-
-        // Debug
-        if (_debug_mode) {
-            cout << " Good pair " << pairI << " created within " << num_of_tries_goodpairs << " tries." << endl;
-        }
-        // Debug end
     }
+    // Debug
+    if (_debug_mode) {
+        cout << "\r 100% created." << endl;
+    }
+    // Debug end
     delete[] hTables;
     delete[] hashValues;
 }
@@ -522,8 +540,10 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
     ULLONG fi0;     // first possible hash value for (perfect) bucket hash function
     ULLONG fi1;     // second possible hash value for (perfect) bucket hash function
     ULLONG fi2;     // third possible hash value for (perfect) bucket hash function
-    ULLONG *h0coeffs = _h_coeffs + ((bucket_num * (_l + 1)) << 1);  // coefficients of first hash function of current good pair of hash functions
-    ULLONG *h1coeffs = h0coeffs + _l + 1;                           // coefficients of second hash function of current good pair of hash functions
+    ULLONG *h0coeffs = _h_coeffs + ((bucket_num * (_l + 1)) <<
+                                    1);  // coefficients of first hash function of current good pair of hash functions
+    ULLONG *h1coeffs = h0coeffs + _l +
+                       1;                           // coefficients of second hash function of current good pair of hash functions
     ULLONG x;       // current key
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];      // range of (perfect) bucket hash function
 
@@ -568,8 +588,10 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
     // TODO check this method!
     // TODO new for queue, removed and visited after first loop?
-    ULLONG max_length = 2 * (ULLONG) ceil(log2(bucket_size)) + 1;   // maximal number of edges that a node is allowed to be incident to (very unlikely to be exceeded)
-    ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];      // number of nodes of the 3-graph = range of the bucket hash function
+    ULLONG max_length = 2 * (ULLONG) ceil(log2(bucket_size)) +
+                        1;   // maximal number of edges that a node is allowed to be incident to (very unlikely to be exceeded)
+    ULLONG mi = _offset[bucket_num + 1] -
+                _offset[bucket_num];      // number of nodes of the 3-graph = range of the bucket hash function
     ULLONG *edgesOf = new ULLONG[max_length * mi]();                // array to store the incident edges of each node
     ULLONG *cEdgesOf = new ULLONG[mi]();                            // array to count the number of incident edges of each node
     ULLONG gValue;                                                  // node of the 3-graph = (possible) hashvalue of the bucket hash function
