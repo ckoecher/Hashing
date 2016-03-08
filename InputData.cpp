@@ -14,6 +14,11 @@ InputData::InputData(string fileName, ios::openmode flags) {
     _stream.open(fileName, flags | fstream::in | fstream::out);
     _size = sizeof(ULLONG);
 
+    if(_stream.fail()) {
+        cerr << "Could not open file \"" << fileName <<"\". Error: " << errno;
+        throw 0;
+    }
+
     //fetch the data length
     _stream.seekg(0, fstream::end);
     _length = (ULLONG) _stream.tellg() / _size;
@@ -31,6 +36,11 @@ InputData::InputData(ios::openmode flags) {
     char *tmpName = strdup("/tmp/tmpfileXXXXXX");
     mkstemp(tmpName);
     _stream.open(tmpName, flags | fstream::in | fstream::out);
+
+    if(_stream.fail()) {
+        cerr << "Could not open temporary file. Error: " << errno;
+        throw 0;
+    }
 
     _evalTime = clock() - time;
 }

@@ -292,6 +292,10 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
 
     // (create and) open statistics file, new results will be appended
     fstream file(statsFileName, ios::out | ios::app);
+    if(file.fail()) {
+        cerr << "Could not open file \"" << statsFileName <<"\". Error: " << errno;
+        throw 0;
+    }
 
     // if file is empty, add header row
     if (file.tellg() == 0) {
@@ -404,7 +408,7 @@ int main(int argc, char *argv[]) {
     // argv[0]: path and name of program itself
     // argv[1]: path of configuration file
     // argv[2]: path of data file
-    // argv[2]: path of statistics file
+    // argv[3]: path of statistics file
 
     string configFileName;
     string dataFileName;
