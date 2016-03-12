@@ -402,6 +402,11 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     file.close();
 }
 
+inline bool fileExists(const std::string& name) {
+    struct stat buffer;
+    return (stat(name.c_str(), &buffer) == 0);
+}
+
 int main(int argc, char *argv[]) {
 
     // Parse command line arguments
@@ -427,7 +432,9 @@ int main(int argc, char *argv[]) {
     // TODO delete debug code
 /*    testInputData();/*
     createInputData(dataFileName);/**/
-    createRandomInputData(dataFileName);/**/
+    if(!fileExists(dataFileName)) {
+        createRandomInputData(dataFileName);
+    }
 
     // Setup
     Configuration config = readConfig(configFileName);
