@@ -9,6 +9,7 @@
 #include "./inih/cpp/INIReader.h"
 #include <assert.h>
 #include <ctime>        // clock_t
+#include <sys/stat.h>
 
 using namespace std;
 
