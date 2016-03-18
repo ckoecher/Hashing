@@ -20,162 +20,11 @@
 #include "InputData.h"
 #include "PerfectHashFunction.h"
 
-void testTypeSizes() {
-    cout << "\nBytes of unsigned char: " << sizeof(unsigned char) << endl;
-    assert(sizeof(unsigned char) == 1);
-    cout << "Bytes of ULLONG: " << sizeof(ULLONG) << endl;
-    assert(sizeof(ULLONG) == 8);
-    cout << "Bytes of double: " << sizeof(double) << ", long double: " << sizeof(long double) << endl;
-    assert(sizeof(long double) == 16);
-}
-
-void testMersenneTwister() {
-    unsigned long seed;
-    cout << "\nseed = ";
-    cin >> seed;
-    mt19937 *rng;
-    rng = new mt19937(seed);
-    uniform_int_distribution<ULLONG> *dist_test;
-    dist_test = new uniform_int_distribution<ULLONG>(0, 1);
-    for (int i = 0; i < 10; i++) {
-        cout << (*dist_test)(*rng) << endl;
-    }
-    delete rng;
-    delete dist_test;
-}
-
-void testBitPairs() {
-    cout << "\nTest GETTABBITPAIR, ZEROTABBITPAIRS and INCTABBITPAIR: carray[16]";
-    int n = 16;
-    clock_t cl;
-    unsigned char *carray = new unsigned char[n]();
-    unsigned char c;
-    cout << "carray:";
-    for (int i = 0; i < n; i++) {
-        carray[i] = i;
-        cout << carray[i];
-    }
-    cout << "\nGETTABBITPAIR content:";
-    for (int i = 0; i < 2 * n; i++) {
-        for (int j = 0; j < 2; j++) {
-            cout << " " << GETTABBITPAIR(carray, j, i);
-        }
-        cout << " #";
-    }
-    cout << "\nZEROTABBITPAIRS content:";
-    for (int i = 0; i < 2 * n; i++) {
-        for (int j = 0; j < 2; j++) {
-            ZEROTABBITPAIRS(carray, i);
-        }
-    }
-    for (int i = 0; i < 2 * n; i++) {
-        for (int j = 0; j < 2; j++) {
-            cout << " " << GETTABBITPAIR(carray, j, i);
-        }
-        cout << " #";
-    }
-    cout << "\nINCTABBITPAIR content:";
-    for (int i = 0; i < 2 * n; i++) {
-        for (int j = 0; j < 2; j++) {
-            if (i % 2 == 1) {
-                INCTABBITPAIR(carray, j, i);
-                INCTABBITPAIR(carray, j, i);
-            }
-            if (j == 1) {
-                INCTABBITPAIR(carray, j, i);
-            }
-        }
-    }
-    for (int i = 0; i < 2 * n; i++) {
-        for (int j = 0; j < 2; j++) {
-            cout << " " << GETTABBITPAIR(carray, j, i);
-        }
-        cout << " #";
-    }
-    cout << "\nn = ";
-    cin >> n;
-    delete[] carray;
-    carray = new unsigned char[n];
-    for (int round = 0; round < 5; round++) {
-        cout << "\nGETTABBITPAIR time to read: ";
-        cl = clock();
-        for (int i = 0; i < 2 * n; i++) {
-            for (int j = 0; j < 2; j++) {
-                c = GETTABBITPAIR(carray, j, i);
-            }
-        }
-        cout << clock() - cl << " ticks";
-    }
-    delete[] carray;
-}
-
-void testSetGetBit() {
-    cout << "\nTest SETBIT and GETBIT" << endl;
-    unsigned char *array = new unsigned char[2]();
-    for (int i = 0; i < 2 * sizeof(unsigned char) * 8; i++) {
-        cout << GETBIT(array, i) << " ";
-    }
-    cout << endl;
-    for (int j = 0; j < 2 * sizeof(unsigned char) * 8; j++) {
-        SETBIT(array, j, 1);
-        for (int i = 0; i < 2 * sizeof(unsigned char) * 8; i++) {
-            cout << GETBIT(array, i) << " ";
-        }
-        cout << endl;
-    }
-    for (int j = 0; j < 2 * sizeof(unsigned char) * 8; j++) {
-        SETBIT(array, j, 0);
-        for (int i = 0; i < 2 * sizeof(unsigned char) * 8; i++) {
-            cout << GETBIT(array, i) << " ";
-        }
-        cout << endl;
-    }
-}
-
-void testSetGetCharBitPairs() {
-    cout << "\nTest SETCHARBITPAIR and GETCHARBITPAIR" << endl;
-    unsigned char *array = new unsigned char[1]();
-    for (int i = 0; i < 4; i++) {
-        cout << " " << GETCHARBITPAIR(array, i);
-    }
-    cout << endl;
-    for (int j = 0; j < 4; j++) {
-        for (int k = 1; k < 4; k++) {
-            SETCHARBITPAIR(array, j, k);
-            for (int i = 0; i < 4; i++) {
-                cout << " " << GETCHARBITPAIR(array, i);
-            }
-            cout << endl;
-        }
-    }
-    for (int j = 0; j < 4; j++) {
-        SETCHARBITPAIR(array, j, 0);
-        for (int i = 0; i < 4; i++) {
-            cout << " " << GETCHARBITPAIR(array, i);
-        }
-        cout << endl;
-    }
-}
-
-void testInputData(string inFilename, string outFilename) {
-    InputData *input = new InputData(inFilename);
-    InputData *output = new InputData(outFilename);
-    ULLONG value;
-    cout << input->getLength();
-    cout << "\n";
-    for (ULLONG i = 0; i < input->getLength(); i++) {
-        value = input->getValue(i);
-        output->setValue(value, i);
-
-        cout << value;
-        cout << "\n";
-    }
-    input->close();
-    output->close();
-    delete input;
-    delete output;
-}
-
+/**
+ * Creates a new data file if it doesn't exist yet and fills it with the first n integers.
+ *
+ * @param[in] dataFileName The path to the data file to create and fill
+ */
 void createInputData(string dataFileName) {
     cout << "\nCreate Input Data" << endl;
     cout << "n = ";
@@ -190,7 +39,7 @@ void createInputData(string dataFileName) {
 }
 
 /**
- * Creates a new data file if it doesn't exists yet and fills it with random data.
+ * Creates a new data file if it doesn't exist yet and fills it with random data.
  *
  * @param[in] dataFileName The path to the data file to create and fill
  */
@@ -470,7 +319,6 @@ inline bool fileExists(const string name) {
  * @return         The return state
  */
 int main(int argc, char *argv[]) {
-
     // Parse command line arguments
     // argv[0]: path and name of program itself
     // argv[1]: path of configuration file
@@ -491,9 +339,6 @@ int main(int argc, char *argv[]) {
     dataFileName = argv[2];
     statsFileName = argv[3];
 
-    // TODO delete debug code
-/*    testInputData();/*
-    createInputData(dataFileName);/**/
     if(!fileExists(dataFileName)) {
         createRandomInputData(dataFileName);
     }
