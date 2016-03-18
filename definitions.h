@@ -31,26 +31,89 @@
 
 using namespace std;
 
-// data type of keys
+/**
+ * The data type of the keys.
+ */
 typedef unsigned long long int ULLONG;
 
-// allows two-dimensional line by line navigation in an one-dimensional array
+/**
+ * This macro maps a two-dimensional array into an one-dimensional array in a row-first way.
+ *
+ * @param  array The two-dimensional array
+ * @param  rows  The number of rows
+ * @param  cols  The number of columns
+ * @param  row   The row to select here
+ * @param  col   The column to select here
+ * @return       The selected array element
+ */
 #define ARR(array, rows, cols, row, col) array[row*cols+col]
 
-// gets and sets two bits in an array of unsigned chars (used as bitmap)
+/**
+ * Returns the two bits with the given index in the array for counting hash values on creation of good hash function
+ * pairs h^i_j.
+ *
+ * @param  array The containing array
+ * @param  tab   The index of the table (either 0 or 1)
+ * @param  index The index of the pair of bits
+ * @return       The value of the pair of bits
+ */
 #define GETTABBITPAIR(array, tab, index) ((array[index >> 1] >> ( 6 - ((index & 1)<<2) - ((tab & 1)<<1) ) ) % 4)
+
+/**
+ * Increases the value of the two bits with the given index in the array for counting hash values on creation of good
+ * hash function pairs h^i_j.
+ *
+ * @param array The containing array
+ * @param tab   The index of the table (either 0 or 1)
+ * @param index The index of the pair of bits
+ */
 #define INCTABBITPAIR(array, tab, index) (array[index >> 1] = array[index >> 1] + (1 << ((1-tab)<<1) << ((1-(index&1))<<2)))
+
+/**
+ * Sets the array element with the given index in the array for counting hash values on creation of good hash function
+ * pairs h^i_j to zero.
+ *
+ * @param array The containing array
+ * @param index The index of the pair of bits
+ */
 #define ZEROTABBITPAIRS(array, index) (array[index >> 1] = 0)
 
-// gets and sets a single bit in an array of unsigned chars (used as bitmap)
+/**
+ * Returns the bit with the given index in a bitmap array.
+ *
+ * @param  array The bitmap array
+ * @param  index The index of the bit
+ * @return       The value of the bit
+ */
 #define GETBIT(array, index) (((array[index >> 3]) >> (index & 7)) & 1)
+
+/**
+ * Sets the bit with the given index in a bitmap array.
+ *
+ * @param array The bitmap array
+ * @param index The index of the bit
+ * @param value The new value of the bit
+ */
 #define SETBIT(array, index, value) (array[index >> 3] ^= (-value ^ array[index >> 3]) & (1 << (index & 7)))
 
-// gets and sets two bits in an array of unsigned chars (used as bitmap)
+/**
+ * Returns the value of the pair of bits in the bitmap array.
+ *
+ * @param  array The bitmap array
+ * @param  index The index of the pair of bits
+ * @return       The value of the pair of bits
+ */
 #define GETCHARBITPAIR(array, index) ((array[index >> 2]) >> ((index & 3) << 1) & 3)
+
+/**
+ * Sets the value of the pair of bits in the bitmap array.
+ *
+ * @param array The bitmap array
+ * @param index The index of the pair of bits
+ * @param value The new value of the pair of bits
+ */
 #define SETCHARBITPAIR(array, index, value) (array[index>>2] = array[index>>2] & (255-(3<<((index&3)<<1))) | (value<<((index&3)<<1)))
 
-// stores configuration (parameters etc.) for current perfect hash function creation
 /**
  * This struct stores the configuration data (parameters etc.) for current perfect hash function creation process.
  */

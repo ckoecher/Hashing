@@ -432,7 +432,7 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
                                            Statistics &stats) {
     // TODO debug following code (if necessary)
     ULLONG *hashValues = new ULLONG[max_bucket_size << 1];              // array to store hashvalues of keys created by good pair of 1-universal hash function of current bucket
-    unsigned char *hTables = new unsigned char[(_tab_rows >> 1) + 1](); // array to count number of keys with the same hashvalue (by the same hash function)
+    unsigned char *hTables = new unsigned char[(_tab_rows >> 1) + 1](); // array to count number of keys with the same hash value (by the same hash function)
     ULLONG *h0coeffs = nullptr;                                         // coefficients of first hash function of current good pair of hash functions
     ULLONG *h1coeffs = nullptr;                                         // coefficients of second hash function of current good pair of hash functions
     bool goodPair;                                                      // indicates whether the current pair of hash functions is still considered as good
