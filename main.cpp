@@ -1,3 +1,21 @@
+/*
+ * Hashing - A simple implementation of Split-And-Share-Hashing.
+ * Copyright (C) 2016  Philipp Schlag, Chris Köcher
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "definitions.h"
 #include "InputData.h"
 #include "PerfectHashFunction.h"
@@ -171,6 +189,11 @@ void createInputData(string dataFileName) {
     delete data;
 }
 
+/**
+ * Creates a new data file if it doesn't exists yet and fills it with random data.
+ *
+ * @param[in] dataFileName The path to the data file to create and fill
+ */
 void createRandomInputData(string dataFileName) {
     cout << "\nCreate Random Input Data" << endl;
     ULLONG n, seed;
@@ -190,6 +213,13 @@ void createRandomInputData(string dataFileName) {
     delete dist;
 }
 
+/**
+ * Reads the configuration file and inserts the data into a Configuration struct. Consider that the configuration file
+ * has to be a INI file.
+ *
+ * @param[in] fileName The path to the configuration file
+ * @return             The configuration data
+ */
 Configuration readConfig(string fileName) {
     INIReader reader(fileName);
 
@@ -218,6 +248,15 @@ Configuration readConfig(string fileName) {
     return config;
 }
 
+/**
+ * Checks whether the constructed perfect hash function is injective.
+ *
+ * @param[in,out] config The configuration data
+ * @param[in]     data   The used data set
+ * @param[in]     phf    The created perfect hash function
+ * @param[in,out] stats  The additional statistical data
+ * @return               true, if the function is injective, otherwise false
+ */
 bool validatePerfectHashFunction(Configuration &config, InputData *data, PerfectHashFunction *phf, Statistics &stats) {
 
     ULLONG datalength = data->getLength();
@@ -287,6 +326,15 @@ bool validatePerfectHashFunction(Configuration &config, InputData *data, Perfect
     }
 }
 
+/**
+ * Saves the statistical data of construction and verification of the perfect hash function into the statistics file.
+ *
+ * @param[in]     statsFileName  The path to the statistics file
+ * @param[in]     configFileName The path to the configuration file
+ * @param[in,out] config         The configuration data
+ * @param[in]     dataFileName   The path to the data file
+ * @param[in]     stats          The statistical data
+ */
 void saveStatistics(string statsFileName, string configFileName, Configuration &config, string dataFileName,
                     Statistics stats) {
 
@@ -361,7 +409,7 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     //file << ";" << stats.setup_end;
     file << ";" << stats.setup_time;
     file << ";" << stats.setup_io;
-    //file << ";" << stats.setup_succuess;
+    //file << ";" << stats.setup_success;
 
     //file << ";" << stats.split_start;
     //file << ";" << stats.split_end;
@@ -402,11 +450,25 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     file.close();
 }
 
-inline bool fileExists(const std::string& name) {
+/**
+ * Checks whether the file with the given path exists on file system yet. We need this dirty hack here are C++11 hasn't
+ * a simple check for this.
+ *
+ * @param[in] name The path to the file to check
+ * @return         true, if the file exists yet, otherwise false
+ */
+inline bool fileExists(const string name) {
     struct stat buffer;
     return (stat(name.c_str(), &buffer) == 0);
 }
 
+/**
+ * The main function.
+ *
+ * @param[in] argc The number of arguments
+ * @param[in] argv The arguments
+ * @return         The return state
+ */
 int main(int argc, char *argv[]) {
 
     // Parse command line arguments

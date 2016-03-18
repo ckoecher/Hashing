@@ -1,6 +1,20 @@
-//
-// Created by philipp on 11.01.16.
-//
+/*
+ * Hashing - A simple implementation of Split-And-Share-Hashing.
+ * Copyright (C) 2016  Philipp Schlag, Chris Köcher
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "definitions.h"
 #include "PerfectHashFunction.h"
@@ -59,7 +73,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     stats.setup_end = clock();
     stats.setup_time = stats.setup_end - stats.setup_start;
     stats.setup_io = data->getEvalTime();
-    stats.setup_succuess = true;
+    stats.setup_success = true;
     stats.split_start = clock();
     data->resetEvalTime();
     // Stats end
@@ -97,11 +111,11 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
     if (_debug_mode) {
         cout << "\nCould split data within " << num_of_tries_split << " tries." << endl;
         cout << "Created " << _m << " buckets with <= " << max_bucket_size << " elements." << endl;
-        cout << "Bucket sizes:" << endl;
+/*        cout << "Bucket sizes:" << endl;
         for (ULLONG i = 0; i < _m; i++) {
             cout << " " << bucket_offsets[i + 1] - bucket_offsets[i];
         }
-        cout << endl;
+        cout << endl;*/
     }
     // Debug end
 
@@ -342,6 +356,7 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
     // Debug
     if (_debug_mode) {
         cout << "\r 100% counted." << flush;
+        cout << endl;
     }
     // Debug end
 
