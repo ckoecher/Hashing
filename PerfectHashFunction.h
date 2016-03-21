@@ -126,7 +126,7 @@ private:
     bool _debug_mode;
 
     /**
-     * Inserts the data from configuration file and computes the bit masks. This is step 1 in our construction plan.
+     * Inserts the data from configuration file and computes the bit masks.
      *
      * @param[in,out] config      The configuration data
      * @param[in]     data_length The length of the input file
@@ -134,7 +134,7 @@ private:
     void _configure(Configuration &config, ULLONG data_length);
 
     /**
-     * Creates a (nearly) 1-universal hash function. This is step 2 in our construction plan.
+     * Creates a (nearly) 1-universal hash function.
      *
      * @param[out] coeffs The array of coefficients of the hash function
      * @param[in]  rng    The random number generator
@@ -159,8 +159,8 @@ private:
 
     /**
      * Splits the input data with the help of the 1-universal hash function into buckets and checks whether these
-     * buckets are small enough (that means smaller than the sqare root of input data length). These are the steps 4-7
-     * in our construction plan. Additionally we compute _tab_width here.
+     * buckets are small enough (that means smaller than the sqare root of input data length).
+     * Additionally we compute _tab_width here.
      *
      * @param[in,out] config          The configuration data
      * @param[in]     data            The input data file
@@ -175,8 +175,8 @@ private:
                 Statistics &stats);
 
     /**
-     * Creates a good pair of hash functions h^i_j (where 0<=i<_m and 0<=j<2) for each bucket. This is step 8 in our
-     * construction plan. Consider that this method throws an exception if it's all tries to find good pairs failed.
+     * Creates a good pair of hash functions h^i_j (where 0<=i<_m and 0<=j<2) for each bucket.
+     * Consider that this method throws an exception if it's all tries to find good pairs failed.
      *
      * @param[in,out] config          The configuration data
      * @param[in]     bucket_data     The bucketed input data
@@ -190,7 +190,7 @@ private:
                           mt19937 *rng, uniform_int_distribution<ULLONG> *dist, Statistics &stats);
 
     /**
-     * Creates the random tables T^i_j, i.e. the array _random_table. This is step 9 in our construction plan.
+     * Creates the random tables T^i_j, i.e. the array _random_table.
      *
      * @param[in] rng  The random number generator
      * @param[in] dist The distribution of the random numbers
@@ -198,8 +198,7 @@ private:
     void _createRandomTables(mt19937 *rng, uniform_int_distribution<ULLONG> *dist);
 
     /**
-     * Creates the random factor of a single bucket, i.e. _random_factor[bucket_num]. This is the first part of step 10
-     * in our construction plan.
+     * Creates the random factor of a single bucket, i.e. _random_factor[bucket_num].
      *
      * @param[in] bucket_num The index of the bucket
      * @param[in] rng        The random number generator
@@ -210,8 +209,7 @@ private:
     /**
      * Computes the hash functions f^i_j and g^i_j (where 0<=i<_m and 0<=j<3) from good hash function pair
      * (h^i_0, h^i_1), _random_table and _random_factor[bucket_num]. Additionally this method evaluations these
-     * functions for all keys in the bucket. This is the other half of step 10 and the steps 11-12 in our construction
-     * plan.
+     * functions for all keys in the bucket.
      *
      * @param[in]     bucket_num            The index of the bucket (bucket_num = i)
      * @param[in,out] acyclicity_test_array The image of the functions g^i_j of this bucket
@@ -225,7 +223,7 @@ private:
     /**
      * Computes the adjacency graph from the hyper-graph given in acyclicity_test_array and checks whether this graph is
      * cyclic. Additionally this method computes the array G_i. Afterwards this method resets the acyclicity_test_array
-     * to zero, again. This is step 13 in out construction plan.
+     * to zero, again.
      *
      * @param[in]     bucket_num            The index of the bucket (bucket_num = i)
      * @param[in,out] acyclicity_test_array The image of the functions g^i_j of this bucket
@@ -257,8 +255,8 @@ private:
 
     /**
      * Computes the size of the actual memory we need for this perfect hash function. Additionally this method computes
-     * the memory size of this perfect hash function if we would save values in a more space efficient way (e.g. in _g
-     * array we use 2 bits for each element, even though we just need 1.5 bits for each element).
+     * the memory size of this perfect hash function if we would save values in a more space efficient way (e.g. in
+     * _random_table array we use 64 bits for each element, even though we just need _tab_width bits for each element).
      *
      * @param[in,out] stats The statistical data of the construction and evaluation process
      */ //TODO: is this right???
@@ -296,19 +294,19 @@ public:
     ULLONG getRange();
 
     /**
-     * Returns the size (in bytes) of the memory needed for this perfect hash function.
+     * Returns the size (in bits) of the memory needed for this perfect hash function.
      *
      * @return The size
      */
-    ULLONG getSizeInBytes();
+    ULLONG getSizeInBits();
 
     /**
-     * Returns the size (in bytes) of the memory theoretically needed for this perfect hash function, if we would save
+     * Returns the size (in bits) of the memory theoretically needed for this perfect hash function, if we would save
      * the data in a more space efficient way.
      *
      * @return The size
      */
-    ULLONG getCompactSizeInBytes();
+    ULLONG getCompactSizeInBits();
 
     /**
      * Destructor of this class. Just frees the memory of the arrays saved here.

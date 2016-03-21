@@ -1,6 +1,3 @@
-//
-// Created by chris on 15.02.16.
-//
 /*
  * Hashing - A simple implementation of Split-And-Share-Hashing.
  * Copyright (C) 2016  Philipp Schlag, Chris Köcher

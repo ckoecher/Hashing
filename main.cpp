@@ -123,7 +123,7 @@ bool validatePerfectHashFunction(Configuration &config, InputData *data, Perfect
 
     // Debug
     if (config.debug_mode) {
-        cout << "### Verify Perfect Hash Function ###" << endl;
+        cout << "### Validate Perfect Hash Function ###" << endl;
         cout << "Check " << datalength << " keys:" << endl;
     }
     short percentage = -1;
@@ -155,7 +155,7 @@ bool validatePerfectHashFunction(Configuration &config, InputData *data, Perfect
         // Debug
         if (config.debug_mode) {
             cout << "\r 100% checked." << endl;
-            cout << "### Verify Perfect Hash Function Successful ###" << endl;
+            cout << "### Validate Perfect Hash Function Successful ###" << endl;
         }
         // Debug end
         // Stats
@@ -168,7 +168,7 @@ bool validatePerfectHashFunction(Configuration &config, InputData *data, Perfect
         // Debug
         if (config.debug_mode) {
             cout << "\nKey no. " << i << " (" << key << ") with  hash value " << hashvalue << " collided." << endl;
-            cout << "### Verify Perfect Hash Function Unsuccessful ###" << endl;
+            cout << "### Validate Perfect Hash Function Unsuccessful ###" << endl;
         }
         // Debug end
         return false;
@@ -176,7 +176,7 @@ bool validatePerfectHashFunction(Configuration &config, InputData *data, Perfect
 }
 
 /**
- * Saves the statistical data of construction and verification of the perfect hash function into the statistics file.
+ * Saves the statistical data of construction and validation of the perfect hash function into the statistics file.
  *
  * @param[in]     statsFileName  The path to the statistics file
  * @param[in]     configFileName The path to the configuration file
@@ -199,20 +199,21 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
         file << "0"
         << ";configFileName;m_coeff;m_exp;seed;dataFileName"
         << ";clocks_per_sec;num_of_keys;range_of_phf"
-        << ";size_in_bytes;size_in_bytes_general;size_in_bytes_split_uhf;size_in_bytes_offsets"
-        << ";size_in_bytes_good_uhf_pairs;size_in_bytes_random_width;size_in_bytes_random_table"
-        << ";size_in_bytes_random_factor;size_in_bytes_g_array"
-        <<
-        ";compact_size_in_bytes;compact_size_in_bytes_general;compact_size_in_bytes_split_uhf;compact_size_in_bytes_offsets"
-        << ";compact_size_in_bytes_good_uhf_pairs;compact_size_in_bytes_random_width;compact_size_in_bytes_random_table"
-        << ";compact_size_in_bytes_random_factor;compact_size_in_bytes_g_array"
+        << ";num_of_buckets;max_bucket_size;min_bucket_size;avg_bucket_size"
+        << ";compact_size_in_bits;compact_size_overhead_in_bits;compact_size_overhead_percentaged"
+        << ";compact_size_in_bits_general;compact_size_in_bits_split_uhf;compact_size_in_bits_offsets"
+        << ";compact_size_in_bits_good_uhf_pairs;compact_size_in_bits_random_width;compact_size_in_bits_random_table"
+        << ";compact_size_in_bits_random_factor;compact_size_in_bits_g_array"
         << ";creation_time;creation_io"
         << ";setup_time;setup_io"
         << ";split_time;split_io;split_tries;split_success"
-        << ";num_of_buckets;max_bucket_size;min_bucket_size;avg_bucket_size"
         << ";goodpairs_time;goodpairs_io;goodpairs_total_tries;goodpairs_success"
         << ";buckets_time;buckets_io;random_tab_tries;random_si_total_tries;buckets_success"
         << ";eval_time;eval_io;avg_eval_time;avg_eval_io;eval_success"
+        << ";size_in_bits"
+        << ";size_in_bits_general;size_in_bits_split_uhf;size_in_bits_offsets"
+        << ";size_in_bits_good_uhf_pairs;size_in_bits_random_width;size_in_bits_random_table"
+        << ";size_in_bits_random_factor;size_in_bits_g_array"
         << endl;
     }
 
@@ -228,25 +229,22 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     file << ";" << stats.num_of_keys;
     file << ";" << stats.range_of_phf;
 
-    file << ";" << stats.size_in_bytes;
-    file << ";" << stats.size_in_bytes_general;
-    file << ";" << stats.size_in_bytes_split_uhf;
-    file << ";" << stats.size_in_bytes_offsets;
-    file << ";" << stats.size_in_bytes_good_uhf_pairs;
-    file << ";" << stats.size_in_bytes_random_width;
-    file << ";" << stats.size_in_bytes_random_table;
-    file << ";" << stats.size_in_bytes_random_factor;
-    file << ";" << stats.size_in_bytes_g_array;
+    file << ";" << stats.num_of_buckets;
+    file << ";" << stats.max_bucket_size;
+    file << ";" << stats.min_bucket_size;
+    file << ";" << stats.avg_bucket_size;
 
-    file << ";" << stats.compact_size_in_bytes;
-    file << ";" << stats.compact_size_in_bytes_general;
-    file << ";" << stats.compact_size_in_bytes_split_uhf;
-    file << ";" << stats.compact_size_in_bytes_offsets;
-    file << ";" << stats.compact_size_in_bytes_good_uhf_pairs;
-    file << ";" << stats.compact_size_in_bytes_random_width;
-    file << ";" << stats.compact_size_in_bytes_random_table;
-    file << ";" << stats.compact_size_in_bytes_random_factor;
-    file << ";" << stats.compact_size_in_bytes_g_array;
+    file << ";" << stats.compact_size_in_bits;
+    file << ";" << stats.compact_size_overhead_in_bits;
+    file << ";" << stats.compact_size_overhead_percentaged;
+    file << ";" << stats.compact_size_in_bits_general;
+    file << ";" << stats.compact_size_in_bits_split_uhf;
+    file << ";" << stats.compact_size_in_bits_offsets;
+    file << ";" << stats.compact_size_in_bits_good_uhf_pairs;
+    file << ";" << stats.compact_size_in_bits_random_width;
+    file << ";" << stats.compact_size_in_bits_random_table;
+    file << ";" << stats.compact_size_in_bits_random_factor;
+    file << ";" << stats.compact_size_in_bits_g_array;
 
     //file << ";" << stats.creation_start;
     //file << ";" << stats.creation_end;
@@ -267,10 +265,6 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     file << ";" << stats.split_tries;
     file << ";" << stats.split_success;
 
-    file << ";" << stats.num_of_buckets;
-    file << ";" << stats.max_bucket_size;
-    file << ";" << stats.min_bucket_size;
-    file << ";" << stats.avg_bucket_size;
 
     //file << ";" << stats.goodpairs_start;
     //file << ";" << stats.goodpairs_end;
@@ -294,6 +288,16 @@ void saveStatistics(string statsFileName, string configFileName, Configuration &
     file << ";" << stats.avg_eval_time;
     file << ";" << stats.avg_eval_io;
     file << ";" << stats.eval_success;
+
+    file << ";" << stats.size_in_bits;
+    file << ";" << stats.size_in_bits_general;
+    file << ";" << stats.size_in_bits_split_uhf;
+    file << ";" << stats.size_in_bits_offsets;
+    file << ";" << stats.size_in_bits_good_uhf_pairs;
+    file << ";" << stats.size_in_bits_random_width;
+    file << ";" << stats.size_in_bits_random_table;
+    file << ";" << stats.size_in_bits_random_factor;
+    file << ";" << stats.size_in_bits_g_array;
 
     file << endl;
     file.close();

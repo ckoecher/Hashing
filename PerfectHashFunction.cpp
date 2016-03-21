@@ -20,7 +20,6 @@
 #include "PerfectHashFunction.h"
 
 PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data, Statistics &stats) {
-    // TODO check this implementation
 
     // Stats
     stats.creation_start = clock();
@@ -378,7 +377,7 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
         }
         // Stats end
     }
-    bucket_offsets[_m] = bucket_offsets[_m - 1]; // TODO = data_length
+    bucket_offsets[_m] = bucket_offsets[_m - 1];
 
     // Debug
     percentage = -1;
@@ -430,7 +429,6 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
 void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *bucket_data, ULLONG *bucket_offsets,
                                            ULLONG max_bucket_size, mt19937 *rng, uniform_int_distribution<ULLONG> *dist,
                                            Statistics &stats) {
-    // TODO debug following code (if necessary)
     ULLONG *hashValues = new ULLONG[max_bucket_size << 1];              // array to store hashvalues of keys created by good pair of 1-universal hash function of current bucket
     unsigned char *hTables = new unsigned char[(_tab_rows >> 1) + 1](); // array to count number of keys with the same hash value (by the same hash function)
     ULLONG *h0coeffs = nullptr;                                         // coefficients of first hash function of current good pair of hash functions
@@ -546,7 +544,6 @@ void PerfectHashFunction::_createRandomFactor(ULLONG bucket_num, mt19937 *rng, u
 
 void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test_array,
                                       InputData *bucket_data, ULLONG bucket_offset, ULLONG bucket_size) {
-    //TODO check this method!
     ULLONG h0value; // hash value of first hash function of current good pair of hash functions
     ULLONG h1value; // hash value of second hash function of current good pair of hash functions
     ULLONG fi0;     // first possible hash value for (perfect) bucket hash function
@@ -596,8 +593,6 @@ void PerfectHashFunction::_computeGij(ULLONG bucket_num, ULLONG *acyclicity_test
 }
 
 bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_array, ULLONG bucket_size) {
-    // TODO check this method!
-    // TODO new for queue, removed and visited after first loop?
     ULLONG max_length = 2 * (ULLONG) ceil(log2(bucket_size)) + 1;   // maximal number of edges that a node is allowed to be incident to (very unlikely to be exceeded)
     ULLONG mi = _offset[bucket_num + 1] - _offset[bucket_num];      // number of nodes of the 3-graph = range of the bucket hash function
     ULLONG *edgesOf = new ULLONG[max_length * mi]();                // array to store the incident edges of each node
@@ -619,7 +614,7 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
             if (cEdgesOf[gValue] >= max_length) {
                 delete[] edgesOf;
                 delete[] cEdgesOf;
-                return true; //TODO is this right?
+                return true;
             }
             ARR(edgesOf, mi, max_length, gValue, cEdgesOf[gValue]) = j;
             cEdgesOf[gValue]++;
@@ -654,7 +649,7 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
 
     // now assign the necessary values to _g in order to transform the acyclic 3-graph into a perfect hash function
     visited = new unsigned char[(mi >> 3) + 1]();
-    for (ULLONG v = _offset[bucket_num]; v < _offset[bucket_num + 1]; v++) { // TODO u umbenennen oder ohne ULLONG
+    for (ULLONG v = _offset[bucket_num]; v < _offset[bucket_num + 1]; v++) {
         SETCHARBITPAIR(_g, v, 0);
     }
     for (ULLONG j = next_queue_index - 1; j < next_queue_index; j--) {
@@ -683,7 +678,6 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
 void PerfectHashFunction::_peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG *acyclicity_test_array,
                                   ULLONG bucket_size, ULLONG *queue, ULLONG &next_queue_index, ULLONG *edgesOf,
                                   ULLONG *cEdgesOf, ULLONG max_length, ULLONG mi, unsigned char *removed) {
-    // TODO check this method
     ULLONG gValue;      // node of the 3-graph = (possible) hashvalue of the bucket hash function
     ULLONG next_edge;   // index of an edge of the 3-graph = index of a key of the bucket
 
@@ -720,33 +714,36 @@ void PerfectHashFunction::_peelOf(ULLONG edge_index, ULLONG vertex_index, ULLONG
 }
 
 void PerfectHashFunction::_computeSizes(Statistics &stats) {
-    stats.size_in_bytes_general = 2 * sizeof(unsigned short);
-    stats.size_in_bytes_split_uhf = (_l + 3) * sizeof(ULLONG);
-    stats.size_in_bytes_offsets = (_m + 1) * sizeof(ULLONG);
-    stats.size_in_bytes_good_uhf_pairs = (2 * _m * (_l + 1) + 2) * sizeof(ULLONG);
-    stats.size_in_bytes_random_width = sizeof(unsigned short);
-    stats.size_in_bytes_random_table = 6 * _tab_rows * sizeof(ULLONG);
-    stats.size_in_bytes_random_factor = _m * sizeof(ULLONG);
-    stats.size_in_bytes_g_array = ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
-    stats.size_in_bytes = stats.size_in_bytes_general + stats.size_in_bytes_offsets + stats.size_in_bytes_split_uhf
-                          + stats.size_in_bytes_good_uhf_pairs + stats.size_in_bytes_random_width
-                          + stats.size_in_bytes_random_table + stats.size_in_bytes_random_factor
-                          + stats.size_in_bytes_g_array;
+    stats.size_in_bits_general = 8* 2 * sizeof(unsigned short);
+    stats.size_in_bits_split_uhf = 8 * (_l + 3) * sizeof(ULLONG);
+    stats.size_in_bits_offsets = 8 * (_m + 1) * sizeof(ULLONG);
+    stats.size_in_bits_good_uhf_pairs = 8 * (2 * _m * (_l + 1) + 2) * sizeof(ULLONG);
+    stats.size_in_bits_random_width = 8 * sizeof(unsigned short);
+    stats.size_in_bits_random_table = 8 * 6 * _tab_rows * sizeof(ULLONG);
+    stats.size_in_bits_random_factor = 8 * _m * sizeof(ULLONG);
+    stats.size_in_bits_g_array = 8 * ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
+    stats.size_in_bits = stats.size_in_bits_general + stats.size_in_bits_offsets + stats.size_in_bits_split_uhf
+                          + stats.size_in_bits_good_uhf_pairs + stats.size_in_bits_random_width
+                          + stats.size_in_bits_random_table + stats.size_in_bits_random_factor
+                          + stats.size_in_bits_g_array;
 
-    stats.compact_size_in_bytes_general = 2 * sizeof(unsigned short);
-    stats.compact_size_in_bytes_split_uhf =
-            2 * sizeof(ULLONG) + (ULLONG) ceil((long double) ((_l + 1) * log2(_h_split_mod_mask + 1)) / 8.0l);
-    stats.compact_size_in_bytes_offsets = (_m + 1) * sizeof(ULLONG);
-    stats.compact_size_in_bytes_good_uhf_pairs =
-            2 * sizeof(ULLONG) + (ULLONG) ceil((long double) ((2 * _m * (_l + 1)) * log2(_h_mod_mask + 1)) / 8.0l);
-    stats.compact_size_in_bytes_random_width = sizeof(unsigned short);
-    stats.compact_size_in_bytes_random_table = (ULLONG) ceil((long double) (6 * _tab_rows * _tab_width) / 8.0l);
-    stats.compact_size_in_bytes_random_factor = (ULLONG) ceil((long double) (_m * _tab_width) / 8.0l);
-    stats.compact_size_in_bytes_g_array = ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
-    stats.compact_size_in_bytes = stats.compact_size_in_bytes_general + stats.compact_size_in_bytes_offsets
-                                  + stats.compact_size_in_bytes_split_uhf + stats.compact_size_in_bytes_good_uhf_pairs
-                                  + stats.compact_size_in_bytes_random_width + stats.compact_size_in_bytes_random_table
-                                  + stats.compact_size_in_bytes_random_factor + stats.compact_size_in_bytes_g_array;
+    stats.compact_size_in_bits_general = 8 * 2 * sizeof(unsigned short);
+    stats.compact_size_in_bits_split_uhf =
+            8 * 2 * sizeof(ULLONG) + (_l + 1) * (ULLONG)log2(_h_split_mod_mask + 1);
+    stats.compact_size_in_bits_offsets = 8 * (_m + 1) * sizeof(ULLONG);
+    stats.compact_size_in_bits_good_uhf_pairs =
+            8 * 2 * sizeof(ULLONG) + (2 * _m * (_l + 1)) * (ULLONG)log2(_h_mod_mask + 1);
+    stats.compact_size_in_bits_random_width = 8 * sizeof(unsigned short);
+    stats.compact_size_in_bits_random_table = 6 * _tab_rows * _tab_width;
+    stats.compact_size_in_bits_random_factor = _m * _tab_width;
+    stats.compact_size_in_bits_g_array = 8 * ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
+    stats.compact_size_in_bits = stats.compact_size_in_bits_general + stats.compact_size_in_bits_offsets
+                                  + stats.compact_size_in_bits_split_uhf + stats.compact_size_in_bits_good_uhf_pairs
+                                  + stats.compact_size_in_bits_random_width + stats.compact_size_in_bits_random_table
+                                  + stats.compact_size_in_bits_random_factor + stats.compact_size_in_bits_g_array;
+    stats.compact_size_overhead_in_bits = stats.compact_size_in_bits - (ULLONG)ceil(2.5 * stats.num_of_keys);
+    stats.compact_size_overhead_percentaged = 100 * (long double)stats.compact_size_overhead_in_bits
+                                              / (long double)(2.5 * stats.num_of_keys);
 }
 
 void PerfectHashFunction::_clear() {
@@ -821,24 +818,24 @@ ULLONG PerfectHashFunction::getRange() {
     return _offset[_m];
 }
 
-ULLONG PerfectHashFunction::getSizeInBytes() {
+ULLONG PerfectHashFunction::getSizeInBits() {
     ULLONG size;
-    size = 3 * sizeof(unsigned short) + 4 * sizeof(ULLONG);
-    size += (_m + 1) * sizeof(ULLONG);
-    size += (_l + 1) * sizeof(ULLONG);
-    size += 2 * _m * (_l + 1) * sizeof(ULLONG);
-    size += (6 * _tab_rows + _m) * sizeof(ULLONG);
-    size += ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
+    size = 8 * (3 * sizeof(unsigned short) + 4 * sizeof(ULLONG));
+    size += 8 * (_m + 1) * sizeof(ULLONG);
+    size += 8 * (_l + 1) * sizeof(ULLONG);
+    size += 8 * 2 * _m * (_l + 1) * sizeof(ULLONG);
+    size += 8 * (6 * _tab_rows + _m) * sizeof(ULLONG);
+    size += 8 * ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
     return size;
 }
 
-ULLONG PerfectHashFunction::getCompactSizeInBytes() {
+ULLONG PerfectHashFunction::getCompactSizeInBits() {
     ULLONG size;
-    size = 3 * sizeof(unsigned short) + 4 * sizeof(ULLONG);
-    size += (_m + 1) * sizeof(ULLONG);
-    size += (ULLONG) ceil((long double) ((_l + 1) * log2(_h_split_mod_mask + 1)) / 8.0l);
-    size += (ULLONG) ceil((long double) ((2 * _m * (_l + 1)) * log2(_h_mod_mask + 1)) / 8.0l);
-    size += (ULLONG) ceil((long double) ((6 * _tab_rows + _m) * _tab_width) / 8.0l);
-    size += ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
+    size = 8 * (3 * sizeof(unsigned short) + 4 * sizeof(ULLONG));
+    size += 8 * (_m + 1) * sizeof(ULLONG);
+    size += (_l + 1) * (ULLONG)log2(_h_split_mod_mask + 1);
+    size += (2 * _m * (_l + 1)) * (ULLONG)log2(_h_mod_mask + 1);
+    size += (6 * _tab_rows + _m) * _tab_width;
+    size += 8 * ((_offset[_m] >> 2) + 1) * sizeof(unsigned char);
     return size;
 }

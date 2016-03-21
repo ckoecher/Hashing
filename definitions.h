@@ -218,98 +218,108 @@ struct Statistics {
     ULLONG range_of_phf = 0;
 
 
-    // The actual used bytes
+    // The actual used bits
     /**
      * The size of the whole PHF.
      */
-    ULLONG size_in_bytes = 0;
+    ULLONG size_in_bits = 0;
 
     /**
      * The size of k (bit length per key fragment) and l (number of key fragments per key).
      */
-    ULLONG size_in_bytes_general = 0;
+    ULLONG size_in_bits_general = 0;
 
     /**
      * The size of the coefficients of the split function.
      */
-    ULLONG size_in_bytes_split_uhf = 0;
+    ULLONG size_in_bits_split_uhf = 0;
 
     /**
      * The size of the offset array.
      */
-    ULLONG size_in_bytes_offsets = 0;
+    ULLONG size_in_bits_offsets = 0;
 
     /**
      * The size of the good hash function pairs h^i_j
      */
-    ULLONG size_in_bytes_good_uhf_pairs = 0;
+    ULLONG size_in_bits_good_uhf_pairs = 0;
 
     /**
      * The size of PerfectHashFunction::_tab_width.
      */
-    ULLONG size_in_bytes_random_width = 0;
+    ULLONG size_in_bits_random_width = 0;
 
     /**
      * The size of the random tables T^i_j.
      */
-    ULLONG size_in_bytes_random_table = 0;
+    ULLONG size_in_bits_random_table = 0;
 
     /**
      * The size of the additional random factors s_i.
      */
-    ULLONG size_in_bytes_random_factor = 0;
+    ULLONG size_in_bits_random_factor = 0;
 
     /**
      * The size of the G_i arrays.
      */
-    ULLONG size_in_bytes_g_array = 0;
+    ULLONG size_in_bits_g_array = 0;
 
 
-    // The needed bytes
+    // The needed bits
     /**
      * The size of the whole PHF.
      */
-    ULLONG compact_size_in_bytes = 0;
+    ULLONG compact_size_in_bits = 0;
+
+    /**
+     * The split and share overhead of the whole PHF.
+     */
+    ULLONG compact_size_overhead_in_bits = 0;
+
+    /**
+     * The percentaged split and share overhead of the whole PHF.
+     */
+    long double compact_size_overhead_percentaged = 0;
 
     /**
      * The size of k (bit length per key fragment) and l (number of key fragments per key).
      */
-    ULLONG compact_size_in_bytes_general = 0;
+    ULLONG compact_size_in_bits_general = 0;
 
     /**
      * The size of the coefficients of the split function.
      */
-    ULLONG compact_size_in_bytes_split_uhf = 0;
+    ULLONG compact_size_in_bits_split_uhf = 0;
 
     /**
      * The size of the offset array.
      */
-    ULLONG compact_size_in_bytes_offsets = 0;
+    ULLONG compact_size_in_bits_offsets = 0;
 
     /**
      * The size of the good hash function pairs h^i_j
      */
-    ULLONG compact_size_in_bytes_good_uhf_pairs = 0;
+    ULLONG compact_size_in_bits_good_uhf_pairs = 0;
 
     /**
      * The size of PerfectHashFunction::_tab_width.
      */
-    ULLONG compact_size_in_bytes_random_width = 0;
+    ULLONG compact_size_in_bits_random_width = 0;
 
     /**
      * The size of the random tables T^i_j.
      */
-    ULLONG compact_size_in_bytes_random_table = 0;
+    ULLONG compact_size_in_bits_random_table = 0;
 
     /**
      * The size of the additional random factors s_i.
      */
-    ULLONG compact_size_in_bytes_random_factor = 0;
+    ULLONG compact_size_in_bits_random_factor = 0;
 
     /**
      * The size of the G_i arrays.
      */
-    ULLONG compact_size_in_bytes_g_array = 0;
+    ULLONG compact_size_in_bits_g_array = 0;
 
 
     // The statistics of the whole creation process
