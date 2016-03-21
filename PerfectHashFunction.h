@@ -134,6 +134,22 @@ private:
     void _configure(Configuration &config, ULLONG data_length);
 
     /**
+     * Computes _m that results in a small expected size of the perfect hash function.
+     *
+     * @param[in]     n The number of keys
+     */
+    void _computeGoodM(ULLONG n);
+
+    /**
+     * Computes derivative of expected variable size of the perfect hash function with m buckets.
+     *
+     * @param[in]     n The number of keys
+     * @param[in]     m The number of buckets
+     * @return          Derivative of expected variable size of the perfect hash function
+     */
+    long double _computeSizeDerivative(ULLONG n, ULLONG m);
+
+    /**
      * Creates a (nearly) 1-universal hash function.
      *
      * @param[out] coeffs The array of coefficients of the hash function
@@ -169,6 +185,7 @@ private:
      * @param[out]    max_bucket_size The maximal size of the buckets
      * @param[out]    max_mi          The maximal range of the values of the second-level hash functions
      * @param[in,out] stats           The statistical data of the construction and evaluation process
+     * @return                        true, if the input data could be split into small buckets, otherwise false
      */
     bool _split(Configuration &config, InputData *data, InputData *bucket_data,
                 ULLONG *&bucket_offsets, ULLONG *max_bucket_size, ULLONG *max_mi,

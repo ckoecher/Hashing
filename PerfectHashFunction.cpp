@@ -134,7 +134,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 
     // Debug
     if (_debug_mode) {
-        cout << "# Create good pairs of universal hash functions:" << endl;
+        cout << "# Create good pairs of 1-universal hash functions:" << endl;
     }
     // Debug end
 
@@ -161,7 +161,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 
     // Debug
     if (_debug_mode) {
-        cout << "Created good pairs of universal hash functions for all " << _m << " buckets." << endl;
+        cout << "Created good pairs of 1-universal hash functions for all " << _m << " buckets." << endl;
     }
     // Debug end
 
@@ -290,10 +290,58 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 void PerfectHashFunction::_configure(Configuration &config, ULLONG data_length) {
     _k = config.k;
     _l = config.l;
-    _m = min((ULLONG) ceil(config.m_coeff * pow(data_length, config.m_exp)),
-             (ULLONG) ceil((long double) data_length / 20.0));
+    if(config.m_coeff != 0 || config.m_exp != 0) {
+        _m = min((ULLONG) ceil(config.m_coeff * pow(data_length, config.m_exp)),
+                 (ULLONG) ceil((long double) data_length / 20.0));
+    } else {
+        _computeGoodM(data_length);
+    }
     _h_split_mod_mask = (ULLONG) pow(2.0l, _k + ceil(log2(_m)) + config.additional_bits_uhf) - 1;
     _debug_mode = config.debug_mode;
+}
+
+void PerfectHashFunction::_computeGoodM(ULLONG n) {
+    // compute _m by using the bisection method
+    ULLONG min_m = 1;   // minimal (reasonable) number of buckets
+    ULLONG max_m = n;   // maximal (reasonable) number of buckets
+    ULLONG mid_m;       // new number of buckets to examine
+    long double min_val;     // expected variable size with min_m buckets
+    long double max_val;     // expected variable size with max_m buckets
+    long double mid_val;     // expected variable size with mid_m buckets
+    min_val = _computeSizeDerivative(n, min_m);
+    max_val = _computeSizeDerivative(n, max_m);
+    if(min_val > 0 || max_val < 0) {
+        // special case if n is too small (for given configuration of _k and _l)
+        _m = (ULLONG) ceil((long double) n / 20.0);
+    } else {
+        // search good _m (with derivative of expected variable size close to 0)
+        while(max_m - min_m > 1) {
+            mid_m = (min_m + max_m) / 2;
+            mid_val = _computeSizeDerivative(n, mid_m);
+            if(mid_val <= 0) {
+                min_m = mid_m;
+            }
+            if(mid_val >= 0) {
+                max_m = mid_m;
+            }
+        }
+        _m = max_m;
+    }
+}
+
+long double PerfectHashFunction::_computeSizeDerivative(ULLONG n, ULLONG m) {
+    long double size; // derivative of expected variable size
+    long double mbs;  // expected maximal bucket size
+    long double mbsm; // derivative of expected maximal bucket size with respect to number of buckets
+    mbs = (long double)n/(long double)m + sqrt(2*n*log2(m)/(long double)m);
+    mbsm = -(long double)n/(long double)(m*m) + sqrt(2*n)*(1.0/log(2)-log2(m)/(long double)m)/(long double)(m*m);
+    size = 70 + 2 * (_l + 1) * (_k + 7);
+    size += (long double)(_l + 1) / (log(2) * m);
+    size += (3 * _l + 4) * log2(mbs);
+    size += (long double)(3 * _l + 4) / log(2) * m * mbsm / mbs;
+    size += (108 + 12.0/log(2)) * sqrt(mbs) * mbsm;
+    size += 18 * sqrt(mbs) * mbsm * log2(mbs);
+    return size;
 }
 
 void PerfectHashFunction::_createUhf(ULLONG *coeffs, mt19937 *rng, uniform_int_distribution<ULLONG> *dist) {
@@ -327,6 +375,12 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
     ULLONG mi_1;                                    // for computation of max_mi and _offset
     ULLONG bucketOverflowSize = max((ULLONG) floor(sqrt(data_length)), (ULLONG) 40);   // size of a bucket that is not small anymore
     ULLONG value;                                   // temporary value from data stream (key)
+
+    // TODO reasonable/necessary?
+    if(config.m_coeff == 0 && config.m_exp == 0) {
+        // _m has been computed via _computeGoodM(...)
+        bucketOverflowSize = max((long double)bucketOverflowSize, ceil((long double)data_length/(long double)_m + 2*sqrt(2*data_length*log2(_m)/(long double)_m)));
+    }
 
     // Debug
     short percentage = -1;
