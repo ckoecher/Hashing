@@ -136,16 +136,16 @@ private:
     /**
      * Computes _m that results in a small expected size of the perfect hash function.
      *
-     * @param[in]     n The number of keys
+     * @param[in] n The number of keys
      */
     void _computeGoodM(ULLONG n);
 
     /**
      * Computes derivative of expected variable size of the perfect hash function with m buckets.
      *
-     * @param[in]     n The number of keys
-     * @param[in]     m The number of buckets
-     * @return          Derivative of expected variable size of the perfect hash function
+     * @param[in] n The number of keys
+     * @param[in] m The number of buckets
+     * @return      Derivative of expected variable size of the perfect hash function
      */
     long double _computeSizeDerivative(ULLONG n, ULLONG m);
 

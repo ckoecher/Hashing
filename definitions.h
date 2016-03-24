@@ -129,13 +129,15 @@ struct Configuration {
     unsigned short l;
 
     /**
-     * The coefficient of m, which is the number of buckets and so the range of the split functions image.
+     * The coefficient of m, which is the number of buckets and so the range of the split functions image. If this
+     * value is 0, we try to compute the optimal value of m such that the size of the perfect hash function is minimal.
      */
     double m_coeff;
 
     /**
      * The exponent of m, which is the number of buckets and so the range of the split functions image.
-     * Let n be the number of keys. Then m = m_coeff * n ^ m_exp.
+     * Let n be the number of keys and m_coeff != 0. Then m = m_coeff * n ^ m_exp. Consider that the value of this
+     * parameter does not matter if m_coeff is equal to 0!
      */
     double m_exp;
 

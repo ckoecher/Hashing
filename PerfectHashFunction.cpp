@@ -290,7 +290,7 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 void PerfectHashFunction::_configure(Configuration &config, ULLONG data_length) {
     _k = config.k;
     _l = config.l;
-    if(config.m_coeff != 0 || config.m_exp != 0) {
+    if(config.m_coeff != 0) {
         _m = min((ULLONG) ceil(config.m_coeff * pow(data_length, config.m_exp)),
                  (ULLONG) ceil((long double) data_length / 20.0));
     } else {
@@ -377,9 +377,9 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
     ULLONG value;                                   // temporary value from data stream (key)
 
     // TODO reasonable/necessary?
-    if(config.m_coeff == 0 && config.m_exp == 0) {
+    if(config.m_coeff == 0) {
         // _m has been computed via _computeGoodM(...)
-        bucketOverflowSize = max((long double)bucketOverflowSize, ceil((long double)data_length/(long double)_m + 2*sqrt(2*data_length*log2(_m)/(long double)_m)));
+        bucketOverflowSize = (ULLONG) max((long double)bucketOverflowSize, ceil((long double)data_length/(long double)_m + 2*sqrt(2*data_length*log2(_m)/(long double)_m)));
     }
 
     // Debug
@@ -657,8 +657,8 @@ bool PerfectHashFunction::_isCyclic(ULLONG bucket_num, ULLONG *acyclicity_test_a
     ULLONG next_queue_index = 0;                                    // number of already removed edges
     unsigned char *removed = nullptr;                               // bitmap that stores information if an edge has been removed
     unsigned char *visited = nullptr;                               // bitmap that stores information if a nodes has been visited already
-    ULLONG u;                                                       // stores a newly visited node in the construction phase of the _g array
-    int c, sum;                                                     // variables to compute the correct value for the _g array for each key (edge)
+    ULLONG u = 0;                                                   // stores a newly visited node in the construction phase of the _g array
+    int c = 0, sum;                                                 // variables to compute the correct value for the _g array for each key (edge)
 
     // construct a list of incident edges of each node
     for (ULLONG j = 0; j < bucket_size; j++) {
@@ -796,7 +796,7 @@ void PerfectHashFunction::_computeSizes(Statistics &stats) {
                                   + stats.compact_size_in_bits_random_width + stats.compact_size_in_bits_random_table
                                   + stats.compact_size_in_bits_random_factor + stats.compact_size_in_bits_g_array;
     stats.compact_size_overhead_in_bits = stats.compact_size_in_bits - (ULLONG)ceil(2.5 * stats.num_of_keys);
-    stats.compact_size_overhead_percentaged = 100 * (long double)stats.compact_size_overhead_in_bits
+    stats.compact_size_overhead_percentaged = 100.0l * (long double)stats.compact_size_overhead_in_bits
                                               / (long double)(2.5 * stats.num_of_keys);
 }
 

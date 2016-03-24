@@ -80,8 +80,8 @@ Configuration readConfig(string fileName) {
     struct Configuration config;
     config.k = (unsigned short) reader.GetInteger("Hashing", "k", 32);
     config.l = (unsigned short) reader.GetInteger("Hashing", "l", 2);
-    config.m_coeff = reader.GetReal("Hashing", "m_coeff", 2);
-    config.m_exp = reader.GetReal("Hashing", "m_exp", 2.0 / 3);
+    config.m_coeff = reader.GetReal("Hashing", "m_coeff", 0);
+    config.m_exp = reader.GetReal("Hashing", "m_exp", 0.5);
     config.additional_bits_uhf = (unsigned short) reader.GetInteger("Hashing", "additional_bits_uhf", 6);
     config.num_of_tries_split = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_split", 42);
     config.num_of_tries_goodpairs = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_goodpairs", 42);
@@ -91,7 +91,7 @@ Configuration readConfig(string fileName) {
     config.additional_bits_tab = (unsigned short) reader.GetInteger("Hashing", "additional_bits_tab", 6);
     config.num_of_tries_random_tab = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_random_tab", 42);
     config.num_of_tries_random_si = (unsigned short) reader.GetInteger("Hashing", "num_of_tries_random_si", 42);
-    config.seed = (ULLONG) reader.GetInteger("Hashing", "seed", 123456); //TODO which default value?
+    config.seed = (ULLONG) reader.GetInteger("Hashing", "seed", 123456);
     config.debug_mode = reader.GetBoolean("Hashing", "debug_mode", true);
 
     return config;
