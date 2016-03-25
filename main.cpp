@@ -355,6 +355,10 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     InputData *data = new InputData(dataFileName);
+    if (data->getLength() == 0) {
+        cerr << "There is no data in file \"" << dataFileName << "\"." << endl;
+        return 0;
+    }
     Statistics stats;
 
     // Creation and Validation
