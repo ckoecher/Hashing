@@ -89,7 +89,6 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
         // try to split the set of keys into small buckets (in temporary file)
         split_successful = _split(config, data, bucket_data, bucket_offsets, &max_bucket_size, &max_mi, stats);
     } while (!split_successful && num_of_tries_split < config.num_of_tries_split);
-    // TODO assert(ceil(log(max_mi)) <= 64)
 
     // abort if all splits were unsuccessful
     if (!split_successful) {
@@ -183,7 +182,6 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
 
     // create distribution for shared random values (table and factors)
     _tab_width = (unsigned short) ceil(log2(max_bucket_size)) + config.additional_bits_tab;
-    // TODO assert(_tab_width <= 64);
     dist_tables = new uniform_int_distribution<ULLONG>(0, (ULLONG) pow(2.0l, _tab_width) - 1);
 
     // prepare data structures to compute perfect bucket hash functions
@@ -264,7 +262,6 @@ PerfectHashFunction::PerfectHashFunction(Configuration &config, InputData *data,
         }
         // Debug end
         _clear();
-        //TODO
         throw 0;
     }
 
@@ -376,7 +373,6 @@ bool PerfectHashFunction::_split(Configuration &config, InputData *data, InputDa
     ULLONG bucketOverflowSize = max((ULLONG) floor(sqrt(data_length)), (ULLONG) 40);   // size of a bucket that is not small anymore
     ULLONG value;                                   // temporary value from data stream (key)
 
-    // TODO reasonable/necessary?
     if(config.m_coeff == 0) {
         // _m has been computed via _computeGoodM(...)
         bucketOverflowSize = (ULLONG) max((long double)bucketOverflowSize, ceil((long double)data_length/(long double)_m + 2*sqrt(2*data_length*log2(_m)/(long double)_m)));
@@ -546,7 +542,6 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
             }
             // evaluation: does every key has at least one unique hashvalue by a specific hash function?
             for (ULLONG j = 0; j < bucket_size && goodPair; j++) {
-                // TODO &&
                 if ((GETTABBITPAIR(hTables, 0, ARR(hashValues, bucket_size, 2, j, 0)) == 2)
                     && (GETTABBITPAIR(hTables, 1, ARR(hashValues, bucket_size, 2, j, 1)) == 2)) {
                     // pair of hash functions is not good
@@ -554,7 +549,6 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
                 }
             }
             // clear hTables for new counting
-            // TODO without condition?
             if (pairI < _m - 1 || !goodPair) {
                 for (ULLONG j = 0; j < bucket_size; j++) {
                     ZEROTABBITPAIRS(hTables, ARR(hashValues, bucket_size, 2, j, 0));
@@ -573,7 +567,6 @@ void PerfectHashFunction::_createGoodPairs(Configuration &config, InputData *buc
             // Debug end
             delete[] hTables;
             delete[] hashValues;
-            // TODO
             throw 0;
         }
     }

@@ -349,7 +349,6 @@ int main(int argc, char *argv[]) {
 
     // Setup
     Configuration config = readConfig(configFileName);
-    // TODO some other conditions?
     if (config.k * config.l != sizeof(ULLONG) * 8) {
         cerr << "The parameters k and l have to satisfy the condition k * l == " << sizeof(ULLONG) * 8 << "." << endl;
         return 0;

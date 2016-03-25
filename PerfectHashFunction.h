@@ -276,7 +276,7 @@ private:
      * _random_table array we use 64 bits for each element, even though we just need _tab_width bits for each element).
      *
      * @param[in,out] stats The statistical data of the construction and evaluation process
-     */ //TODO: is this right???
+     */
     void _computeSizes(Statistics &stats);
 
     /**
